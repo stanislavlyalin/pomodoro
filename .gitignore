@@ -1,0 +1,77 @@
+# Directories to exclude
+/build
+/.idea
+/.gradle
+/local.properties
+/captures
+.externalNativeBuild
+.DS_Store
+
+# Exclude cached and configuration files of Android Studio
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/gradle.xml
+
+# Ignore custom run configuration files
+.idea/runConfigurations/
+
+# Test and run files
+.gradle/
+/local.properties
+
+# Exclude index files
+.idea/misc.xml
+.idea/inspectionProfiles
+.idea/modules
+
+# Log file
+*.log
+
+# Directories to exclude in an Android project
+/build/
+/app/build/
+/gradle/
+/captures/
+
+# Exclude security signature files
+*.jks
+*.keystore
+*.dm
+app/build/outputs/**/app-release.dm
+
+# Exclude NDK files
+.externalNativeBuild
+
+# Exclude IntelliJ IDEA specific files
+.idea/
+
+# Ignore configuration and temporary files
+*.iml
+*.hprof
+.idea/*
+.gradle/*
+/local.properties
+/.idea
+*.apk
+*.ap_
+*.cxx
+*.dex
+*.class
+*.so
+*.obj
+*.a
+*.o
+*.log
+*.java
+
+# Exclude Android specific temporary files
+.idea/workspace.xml
+.idea/navEditor.xml
+
+# Ignore output-metadata.json file
+app/build/outputs/**/*.json
+app/**/output-metadata.json

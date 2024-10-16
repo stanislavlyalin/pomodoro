@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="tomato_size">48dp</dimen>
+    <dimen name="tomato_margin">4dp</dimen>
+
+    <dimen name="button_width">300dp</dimen>
+    <dimen name="button_height">75dp</dimen>
+</resources>

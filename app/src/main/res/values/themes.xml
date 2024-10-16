@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.PomodoroApp" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- Здесь вы можете настроить вашу тему -->
+    </style>
+</resources>
