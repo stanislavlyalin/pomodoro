@@ -8,7 +8,7 @@
     android:padding="16dp"
     android:background="@color/pale_green">
 
-    <!-- Логотип -->
+    <!-- Logo -->
     <ImageView
         android:id="@+id/logo"
         android:layout_width="200dp"
@@ -16,10 +16,10 @@
         android:src="@drawable/logo"
         android:layout_marginBottom="16dp" />
 
-    <!-- Таймер -->
+    <!-- Timer -->
     <TextView
         android:id="@+id/timer_text"
-        android:text="35:00"
+        android:text="@string/TimerInitialTime"
         android:textSize="120sp"
         android:textStyle="bold"
         android:textColor="@color/timer_green"
@@ -28,10 +28,10 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="24dp" />
 
-    <!-- Кнопка "Старт" -->
+    <!-- "Start" button -->
     <Button
         android:id="@+id/start_button"
-        android:text="Старт"
+        android:text="@string/Start"
         android:textSize="24sp"
         android:textColor="@android:color/white"
         android:background="@drawable/rounded_button"
@@ -39,13 +39,13 @@
         android:layout_height="@dimen/button_height"
         android:layout_marginBottom="24dp" />
 
-    <!-- Сетка с помидорками -->
+    <!-- Grid with tomatoes -->
     <GridLayout
         android:id="@+id/tomato_grid"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:columnCount="6"
         android:rowCount="2">
-    <!-- Помидорки будут добавлены программно -->
+    <!-- Tomatoes will be added programmatically -->
     </GridLayout>
 </LinearLayout>

@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">PomodoroApp</string>
+    <string name="Start">Старт</string>
+    <string name="TimerInitialTime">25:00</string>
 </resources>

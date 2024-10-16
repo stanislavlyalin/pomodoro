@@ -21,29 +21,29 @@ class MainActivity : AppCompatActivity() {
     private lateinit var sharedPreferences: SharedPreferences
 
     private var pomodoroCount = 0
-    private val totalPomodoros = 11 // Легко изменить количество помидорок здесь
-    private val pomodoroDuration = 35 * 60 * 1000L // 25 минут в миллисекундах
+    private val totalPomodoros = 12                 // Easily change the number of tomatoes here
+    private val pomodoroDuration = 25 * 60 * 1000L  // 25 minutes in milliseconds
     private var timer: CountDownTimer? = null
     private var lastResetDay: Int = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Устанавливаем макет
+        // Setting up the layout
         setContentView(R.layout.activity_main)
 
-        // Инициализируем элементы интерфейса
+        // Initializing UI elements
         timerText = findViewById(R.id.timer_text)
         startButton = findViewById(R.id.start_button)
         tomatoGrid = findViewById(R.id.tomato_grid)
 
-        // Устанавливаем количество столбцов в GridLayout в зависимости от totalPomodoros
-        tomatoGrid.columnCount = 6 // Можно изменить в соответствии с вашими предпочтениями
+        // Setting the number of columns in GridLayout based on totalPomodoros
+        tomatoGrid.columnCount = 6 // Can be adjusted according to your preferences
 
-        // Инициализируем SharedPreferences
+        // Initializing SharedPreferences
         sharedPreferences = getSharedPreferences("PomodoroPrefs", MODE_PRIVATE)
 
-        // Загружаем сохраненные данные
+        // Loading saved data
         pomodoroCount = sharedPreferences.getInt("pomodoroCount", 0)
         lastResetDay = sharedPreferences.getInt("lastResetDay", -1)
 
@@ -69,7 +69,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startTimer() {
-        // Отключаем кнопку "Старт"
+        // Disabling the "Start" button
         startButton.text = "Работаем..."
         startButton.isEnabled = false
 
@@ -87,7 +87,7 @@ class MainActivity : AppCompatActivity() {
 
                 timerText.text = "25:00"
 
-                // Включаем кнопку "Старт"
+                // Enabling the "Start" button
                 startButton.text = "Старт"
                 startButton.isEnabled = true
 
@@ -101,11 +101,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun generateTomatoImages() {
-        // Очищаем предыдущие помидорки
+        // Clearing previous tomatoes
         tomatoGrid.removeAllViews()
         tomatoImages.clear()
 
-        // Размер и отступы для помидорок
+        // Size and spacing for tomatoes
         val size = resources.getDimensionPixelSize(R.dimen.tomato_size)
         val margin = resources.getDimensionPixelSize(R.dimen.tomato_margin)
 
@@ -132,7 +132,7 @@ class MainActivity : AppCompatActivity() {
                 if (i < pomodoroCount) {
                     imageView.setImageResource(R.drawable.tomato_red)
                 } else {
-                    imageView.setImageResource(R.drawable.tomato_gray)
+                    imageView.setImageResource(R.drawable.tomato_green)
                 }
             }
         }
