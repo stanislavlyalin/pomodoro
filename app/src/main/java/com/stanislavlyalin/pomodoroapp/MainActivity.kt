@@ -8,6 +8,7 @@ import android.widget.Button
 import android.widget.GridLayout
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.setMargins
 import java.util.Calendar
@@ -47,12 +48,18 @@ class MainActivity : AppCompatActivity() {
         pomodoroCount = sharedPreferences.getInt("pomodoroCount", 0)
         lastResetDay = sharedPreferences.getInt("lastResetDay", -1)
 
+        timerText.text = formatPomodoroDuration(pomodoroDuration)
+
         checkForDayReset()
         generateTomatoImages()
         updateTomatoes()
 
         startButton.setOnClickListener {
-            startTimer()
+            if (timer == null) {
+                startTimer()
+            } else {
+                showEarlyFinishDialog()
+            }
         }
     }
 
@@ -70,8 +77,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun startTimer() {
         // Disabling the "Start" button
-        startButton.text = "Работаем..."
-        startButton.isEnabled = false
+        startButton.text = getString(R.string.FinishTimer)
+        startButton.isEnabled = true
 
         timer?.cancel()
 
@@ -83,12 +90,13 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onFinish() {
+                timer = null
                 playSound()
 
-                timerText.text = "25:00"
+                timerText.text = formatPomodoroDuration(pomodoroDuration)
 
                 // Enabling the "Start" button
-                startButton.text = "Старт"
+                startButton.text = getString(R.string.Start)
                 startButton.isEnabled = true
 
                 if (pomodoroCount < totalPomodoros) {
@@ -153,5 +161,34 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         timer?.cancel()
+    }
+
+    private fun showEarlyFinishDialog() {
+        val alertDialog = AlertDialog.Builder(this)
+            .setTitle(getString(R.string.ConfirmFinishTimer))
+            .setMessage(getString(R.string.AreYouSureToFinishTimer))
+            .setPositiveButton(getString(R.string.Yes)) { _, _ ->
+                timer?.cancel()
+                timerText.text = formatPomodoroDuration(pomodoroDuration)
+                if (pomodoroCount < totalPomodoros) {
+                    pomodoroCount++
+                    updateTomatoes()
+                    saveData()
+                }
+                startButton.text = getString(R.string.Start)
+                timer = null
+            }
+            .setNegativeButton(getString(R.string.No)) { dialog, _ ->
+                dialog.dismiss()
+            }
+            .create()
+
+        alertDialog.show()
+    }
+
+    private fun formatPomodoroDuration(durationMillis: Long): String {
+        val minutes = (durationMillis / 1000) / 60
+        val seconds = (durationMillis / 1000) % 60
+        return String.format("%02d:%02d", minutes, seconds)
     }
 }

@@ -2,4 +2,9 @@
     <string name="app_name">PomodoroApp</string>
     <string name="Start">Старт</string>
     <string name="TimerInitialTime">25:00</string>
+    <string name="FinishTimer">Завершить</string>
+    <string name="ConfirmFinishTimer">Подтверждение завершения</string>
+    <string name="AreYouSureToFinishTimer">Вы действительно хотите досрочно завершить таймер и получить помидор?</string>
+    <string name="Yes">Да</string>
+    <string name="No">Нет</string>
 </resources>
