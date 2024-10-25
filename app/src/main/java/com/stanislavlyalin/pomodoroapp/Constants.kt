@@ -1,0 +1,10 @@
+package com.stanislavlyalin.pomodoroapp
+
+object Constants {
+    const val PREFERENCES = "PomodoroPrefs"
+    const val POMODORO_COUNT_KEY = "pomodoroCount"
+    const val LAST_RESET_DAY_KEY = "lastResetDay"
+    const val START_TIME_KEY = "startTime"
+    const val WORK_REQUEST_ID_KEY = "workRequestId"
+    const val TIME_FORMAT = "%02d:%02d"
+}

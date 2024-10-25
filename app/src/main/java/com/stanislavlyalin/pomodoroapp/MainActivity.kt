@@ -11,7 +11,13 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.setMargins
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.WorkRequest
 import java.util.Calendar
+import java.util.UUID
+import java.util.concurrent.TimeUnit
+import kotlin.math.min
 
 class MainActivity : AppCompatActivity() {
 
@@ -24,8 +30,10 @@ class MainActivity : AppCompatActivity() {
     private var pomodoroCount = 0
     private val totalPomodoros = 12                 // Easily change the number of tomatoes here
     private val pomodoroDuration = 25 * 60 * 1000L  // 25 minutes in milliseconds
+    private var startTime: Long = 0L
     private var timer: CountDownTimer? = null
     private var lastResetDay: Int = -1
+    private var workRequestId: UUID? = null         // Background timer ID
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,11 +50,17 @@ class MainActivity : AppCompatActivity() {
         tomatoGrid.columnCount = 6 // Can be adjusted according to your preferences
 
         // Initializing SharedPreferences
-        sharedPreferences = getSharedPreferences("PomodoroPrefs", MODE_PRIVATE)
+        sharedPreferences = getSharedPreferences(Constants.PREFERENCES, MODE_PRIVATE)
 
         // Loading saved data
-        pomodoroCount = sharedPreferences.getInt("pomodoroCount", 0)
-        lastResetDay = sharedPreferences.getInt("lastResetDay", -1)
+        pomodoroCount = sharedPreferences.getInt(Constants.POMODORO_COUNT_KEY, 0)
+        lastResetDay = sharedPreferences.getInt(Constants.LAST_RESET_DAY_KEY, -1)
+        sharedPreferences.getString(Constants.WORK_REQUEST_ID_KEY, null)?.let {
+            workRequestId = UUID.fromString(it)
+        }
+        val currentTime = System.currentTimeMillis()
+        startTime = sharedPreferences.getLong(Constants.START_TIME_KEY, currentTime)
+        val remainingTime = min(pomodoroDuration, pomodoroDuration - (currentTime - startTime))
 
         timerText.text = formatPomodoroDuration(pomodoroDuration)
 
@@ -54,12 +68,34 @@ class MainActivity : AppCompatActivity() {
         generateTomatoImages()
         updateTomatoes()
 
+        if (remainingTime in 1..<pomodoroDuration) {
+            // Restore and continue timer
+            resumeTimer(remainingTime)
+
+            // If we launched a program with a background timer running, stop it
+            workRequestId?.let {
+                WorkManager.getInstance(this).cancelWorkById(it)
+            }
+        } else {
+            timerText.text = formatPomodoroDuration(pomodoroDuration)
+        }
+
         startButton.setOnClickListener {
             if (timer == null) {
                 startTimer()
             } else {
                 showEarlyFinishDialog()
             }
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+
+        if (timer != null) {
+            val currentTime = System.currentTimeMillis()
+            val remainingDuration = startTime + pomodoroDuration - currentTime
+            startTimerWithWorkManager(remainingDuration)
         }
     }
 
@@ -86,7 +122,7 @@ class MainActivity : AppCompatActivity() {
             override fun onTick(millisUntilFinished: Long) {
                 val minutes = (millisUntilFinished / 1000) / 60
                 val seconds = (millisUntilFinished / 1000) % 60
-                timerText.text = String.format("%02d:%02d", minutes, seconds)
+                timerText.text = String.format(Constants.TIME_FORMAT, minutes, seconds)
             }
 
             override fun onFinish() {
@@ -96,6 +132,66 @@ class MainActivity : AppCompatActivity() {
                 timerText.text = formatPomodoroDuration(pomodoroDuration)
 
                 // Enabling the "Start" button
+                startButton.text = getString(R.string.Start)
+                startButton.isEnabled = true
+
+                if (pomodoroCount < totalPomodoros) {
+                    pomodoroCount++
+                    updateTomatoes()
+                    saveData()
+                }
+
+                sharedPreferences.withPrefs { it.remove(Constants.START_TIME_KEY) }
+            }
+        }.start()
+
+        startTime = System.currentTimeMillis()
+        sharedPreferences.withPrefs { it.putLong(Constants.START_TIME_KEY, startTime) }
+    }
+
+    private fun startTimerWithWorkManager(durationMillis: Long) {
+        workRequestId?.let { WorkManager.getInstance(this).cancelWorkById(it) }
+
+        // Create OneTimeWorkRequest to be executed after a specified time
+        val timerRequest: WorkRequest = OneTimeWorkRequestBuilder<PomodoroWorker>()
+            .setInitialDelay(durationMillis, TimeUnit.MILLISECONDS) // Set the delay time
+            .build()
+
+        workRequestId = timerRequest.id
+
+        // Launch WorkManager to complete the task
+        WorkManager.getInstance(this).enqueue(timerRequest)
+
+        sharedPreferences.withPrefs {
+            it.putString(
+                Constants.WORK_REQUEST_ID_KEY,
+                workRequestId.toString()
+            )
+        }
+    }
+
+    private fun resumeTimer(remainingTime: Long) {
+        // Updating the "Start" button
+        startButton.text = getString(R.string.FinishTimer)
+        startButton.isEnabled = true
+
+        timer?.cancel()
+
+        // Create a new CountDownTimer that continues from the remaining time
+        timer = object : CountDownTimer(remainingTime, 1000) {
+            override fun onTick(millisUntilFinished: Long) {
+                val minutes = (millisUntilFinished / 1000) / 60
+                val seconds = (millisUntilFinished / 1000) % 60
+                timerText.text = String.format(Constants.TIME_FORMAT, minutes, seconds)
+            }
+
+            override fun onFinish() {
+                timer = null
+                playSound()
+
+                timerText.text = formatPomodoroDuration(pomodoroDuration)
+
+                // Turn on the "Start" button
                 startButton.text = getString(R.string.Start)
                 startButton.isEnabled = true
 
@@ -126,7 +222,7 @@ class MainActivity : AppCompatActivity() {
             params.setMargins(margin)
 
             imageView.layoutParams = params
-            imageView.setImageResource(R.drawable.tomato_gray)
+            imageView.setImageResource(R.drawable.tomato_green)
 
             tomatoGrid.addView(imageView)
             tomatoImages.add(imageView)
@@ -147,10 +243,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun saveData() {
-        val editor = sharedPreferences.edit()
-        editor.putInt("pomodoroCount", pomodoroCount)
-        editor.putInt("lastResetDay", lastResetDay)
-        editor.apply()
+        sharedPreferences.withPrefs {
+            it.putInt(Constants.POMODORO_COUNT_KEY, pomodoroCount)
+            it.putInt(Constants.LAST_RESET_DAY_KEY, lastResetDay)
+        }
     }
 
     private fun playSound() {
@@ -177,6 +273,13 @@ class MainActivity : AppCompatActivity() {
                 }
                 startButton.text = getString(R.string.Start)
                 timer = null
+
+                // Canceling a WorkManager task
+                workRequestId?.let {
+                    WorkManager.getInstance(this).cancelWorkById(it)
+                }
+
+                sharedPreferences.withPrefs { it.remove(Constants.START_TIME_KEY) }
             }
             .setNegativeButton(getString(R.string.No)) { dialog, _ ->
                 dialog.dismiss()
@@ -189,6 +292,6 @@ class MainActivity : AppCompatActivity() {
     private fun formatPomodoroDuration(durationMillis: Long): String {
         val minutes = (durationMillis / 1000) / 60
         val seconds = (durationMillis / 1000) % 60
-        return String.format("%02d:%02d", minutes, seconds)
+        return String.format(Constants.TIME_FORMAT, minutes, seconds)
     }
 }
