@@ -1,11 +1,13 @@
 package com.stanislavlyalin.pomodoroapp
 
+import android.content.Intent
 import android.content.SharedPreferences
 import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.widget.Button
 import android.widget.GridLayout
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
@@ -28,8 +30,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var sharedPreferences: SharedPreferences
 
     private var pomodoroCount = 0
-    private val totalPomodoros = 12                 // Easily change the number of tomatoes here
-    private val pomodoroDuration = 25 * 60 * 1000L  // 25 minutes in milliseconds
+    private var totalPomodoros = 12                 // Easily change the number of tomatoes here
+    private var pomodoroDuration = 25 * 60 * 1000L  // 25 minutes in milliseconds
     private var startTime: Long = 0L
     private var timer: CountDownTimer? = null
     private var lastResetDay: Int = -1
@@ -45,6 +47,7 @@ class MainActivity : AppCompatActivity() {
         timerText = findViewById(R.id.timer_text)
         startButton = findViewById(R.id.start_button)
         tomatoGrid = findViewById(R.id.tomato_grid)
+        val settingsButton: ImageButton = findViewById(R.id.settings_button)
 
         // Setting the number of columns in GridLayout based on totalPomodoros
         tomatoGrid.columnCount = 6 // Can be adjusted according to your preferences
@@ -55,6 +58,8 @@ class MainActivity : AppCompatActivity() {
         // Loading saved data
         pomodoroCount = sharedPreferences.getInt(Constants.POMODORO_COUNT_KEY, 0)
         lastResetDay = sharedPreferences.getInt(Constants.LAST_RESET_DAY_KEY, -1)
+        totalPomodoros = sharedPreferences.getInt(Constants.TOTAL_POMODOROS_KEY, 12)
+        pomodoroDuration = sharedPreferences.getLong(Constants.POMODORO_DURATION_KEY, 25 * 60 * 1000L)
         sharedPreferences.getString(Constants.WORK_REQUEST_ID_KEY, null)?.let {
             workRequestId = UUID.fromString(it)
         }
@@ -86,6 +91,11 @@ class MainActivity : AppCompatActivity() {
             } else {
                 showEarlyFinishDialog()
             }
+        }
+
+        settingsButton.setOnClickListener {
+            val intent = Intent(this, SettingsActivity::class.java)
+            startActivity(intent)
         }
     }
 

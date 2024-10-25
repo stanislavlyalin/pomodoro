@@ -48,4 +48,16 @@
         android:rowCount="2">
     <!-- Tomatoes will be added programmatically -->
     </GridLayout>
+
+    <ImageButton
+        android:id="@+id/settings_button"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:src="@drawable/ic_settings"
+        android:contentDescription="@string/settings"
+        android:background="@null"
+        android:layout_gravity="end"
+        android:layout_margin="16dp"
+        android:scaleType="centerInside" />
+
 </LinearLayout>
