@@ -4,8 +4,10 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -36,6 +38,11 @@ class SettingsActivity : AppCompatActivity() {
                 25 * 60 * 1000L
             ) / 60000).toString()
         )
+
+        // Displaying the application version
+        val commitHash = BuildConfig.COMMIT_HASH
+        val versionInfo = getString(R.string.version_info, BuildConfig.VERSION_NAME, commitHash)
+        findViewById<TextView>(R.id.appVersion).text = versionInfo
 
         saveButton.setOnClickListener {
             val newPomodoroCount = pomodoroCountInput.text.toString().toIntOrNull()

@@ -19,6 +19,10 @@ android {
     namespace = "com.stanislavlyalin.pomodoroapp"
     compileSdk = 34
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId = "com.stanislavlyalin.pomodoroapp"
         minSdk = 24
@@ -32,6 +36,7 @@ android {
         }
 
         archivesName = "enjoy-${gitCommitHash}"
+        buildConfigField("String", "COMMIT_HASH", "\"$gitCommitHash\"")
     }
 
     buildTypes {
