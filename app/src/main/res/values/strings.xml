@@ -19,4 +19,5 @@
     <string name="withTomato">С помидором</string>
     <string name="withoutTomato">Без помидора</string>
     <string name="cancel">Отмена</string>
+    <string name="version_info">Version: %1$s\nCommit: %2$s</string>
 </resources>

@@ -1,3 +1,15 @@
+import org.jetbrains.kotlin.gradle.plugin.mpp.pm20.util.archivesName
+
+val gitCommitHash: String by lazy {
+    try {
+        val process = Runtime.getRuntime().exec("git rev-parse HEAD", null, project.rootDir)
+        process.inputStream.bufferedReader().readText().trim()
+    } catch (e: Exception) {
+        e.printStackTrace()
+        "unknown"
+    }
+}
+
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
@@ -6,6 +18,10 @@ plugins {
 android {
     namespace = "com.stanislavlyalin.pomodoroapp"
     compileSdk = 34
+
+    buildFeatures {
+        buildConfig = true
+    }
 
     defaultConfig {
         applicationId = "com.stanislavlyalin.pomodoroapp"
@@ -18,6 +34,9 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        archivesName = "enjoy-${gitCommitHash}"
+        buildConfigField("String", "COMMIT_HASH", "\"$gitCommitHash\"")
     }
 
     buildTypes {
