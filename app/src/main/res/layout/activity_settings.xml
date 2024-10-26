@@ -1,70 +1,86 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="30dp"
     android:background="@color/pale_green">
 
     <ImageView
-        android:id="@+id/logo"
+        android:id="@+id/settings"
         android:layout_width="200dp"
         android:layout_height="200dp"
+        android:layout_marginTop="50dp"
         android:src="@drawable/ic_settings"
-        android:layout_marginBottom="16dp"
-        android:layout_gravity="center" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/pomodoro_count_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="20sp"
+        android:layout_marginStart="30dp"
+        android:layout_marginTop="50dp"
         android:text="@string/pomodoro_count_label"
-        android:layout_marginTop="20dp"
-        android:layout_marginBottom="8dp" />
+        android:textSize="20sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/settings" />
 
     <EditText
         android:id="@+id/pomodoro_count_input"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginStart="30dp"
+        android:hint="@string/number_of_pomodoros"
         android:inputType="number"
         android:textSize="30sp"
-        android:hint="@string/number_of_pomodoros"
-        android:layout_marginBottom="16dp" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/pomodoro_count_label" />
 
     <TextView
         android:id="@+id/pomodoro_duration_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="20sp"
+        android:layout_marginStart="30dp"
+        android:layout_marginTop="20dp"
         android:text="@string/pomodoro_duration_label"
-        android:layout_marginBottom="8dp" />
+        android:textSize="20sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/pomodoro_count_input" />
 
     <EditText
         android:id="@+id/pomodoro_duration_input"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginStart="30dp"
+        android:hint="@string/pomodoro_duration_minutes"
         android:inputType="number"
         android:textSize="30sp"
-        android:hint="@string/pomodoro_duration_minutes"
-        android:layout_marginBottom="24dp" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/pomodoro_duration_label" />
 
     <Button
         android:id="@+id/save_button"
         android:layout_width="@dimen/button_width"
         android:layout_height="@dimen/button_height"
-        android:text="@string/save"
-        android:textSize="18sp"
-        android:textColor="@android:color/white"
+        android:layout_marginTop="50dp"
         android:background="@drawable/rounded_button"
-        android:layout_gravity="center"
-        android:layout_marginTop="40dp"
-        android:layout_marginBottom="24dp" />
+        android:text="@string/save"
+        android:textColor="@android:color/white"
+        android:textSize="18sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/pomodoro_duration_input" />
 
     <TextView
         android:id="@+id/settings_apply_notice"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:gravity="center"
         android:text="@string/settings_apply_after_restart"
-        android:layout_gravity="center"
-        android:layout_marginTop="16dp" />
-</LinearLayout>
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/save_button" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
