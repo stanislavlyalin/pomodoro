@@ -59,7 +59,8 @@ class MainActivity : AppCompatActivity() {
         pomodoroCount = sharedPreferences.getInt(Constants.POMODORO_COUNT_KEY, 0)
         lastResetDay = sharedPreferences.getInt(Constants.LAST_RESET_DAY_KEY, -1)
         totalPomodoros = sharedPreferences.getInt(Constants.TOTAL_POMODOROS_KEY, 12)
-        pomodoroDuration = sharedPreferences.getLong(Constants.POMODORO_DURATION_KEY, 25 * 60 * 1000L)
+        pomodoroDuration =
+            sharedPreferences.getLong(Constants.POMODORO_DURATION_KEY, 25 * 60 * 1000L)
         sharedPreferences.getString(Constants.WORK_REQUEST_ID_KEY, null)?.let {
             workRequestId = UUID.fromString(it)
         }
@@ -270,33 +271,48 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showEarlyFinishDialog() {
-        val alertDialog = AlertDialog.Builder(this)
-            .setTitle(getString(R.string.ConfirmFinishTimer))
-            .setMessage(getString(R.string.AreYouSureToFinishTimer))
-            .setPositiveButton(getString(R.string.Yes)) { _, _ ->
-                timer?.cancel()
-                timerText.text = formatPomodoroDuration(pomodoroDuration)
-                if (pomodoroCount < totalPomodoros) {
-                    pomodoroCount++
-                    updateTomatoes()
-                    saveData()
-                }
-                startButton.text = getString(R.string.Start)
-                timer = null
-
-                // Canceling a WorkManager task
-                workRequestId?.let {
-                    WorkManager.getInstance(this).cancelWorkById(it)
-                }
-
-                sharedPreferences.withPrefs { it.remove(Constants.START_TIME_KEY) }
-            }
-            .setNegativeButton(getString(R.string.No)) { dialog, _ ->
-                dialog.dismiss()
-            }
+        val dialogView = layoutInflater.inflate(R.layout.dialog_custom, null)
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
             .create()
 
-        alertDialog.show()
+        dialogView.findViewById<Button>(R.id.with_tomato_button).setOnClickListener {
+            finishTimer(addTomato = true)
+            dialog.dismiss()
+        }
+
+        dialogView.findViewById<Button>(R.id.without_tomato_button).setOnClickListener {
+            finishTimer(addTomato = false)
+            dialog.dismiss()
+        }
+
+        dialogView.findViewById<Button>(R.id.cancel_button).setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    private fun finishTimer(addTomato: Boolean) {
+        timer?.cancel()
+        timer = null
+
+        timerText.text = formatPomodoroDuration(pomodoroDuration)
+        startButton.text = getString(R.string.Start)
+        startButton.isEnabled = true
+
+        if (addTomato && pomodoroCount < totalPomodoros) {
+            pomodoroCount++
+            updateTomatoes()
+            saveData()
+        }
+
+        // Canceling a WorkManager task
+        workRequestId?.let {
+            WorkManager.getInstance(this).cancelWorkById(it)
+        }
+
+        sharedPreferences.withPrefs { it.remove(Constants.START_TIME_KEY) }
     }
 
     private fun formatPomodoroDuration(durationMillis: Long): String {
