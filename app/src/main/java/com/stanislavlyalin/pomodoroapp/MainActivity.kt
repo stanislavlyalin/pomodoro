@@ -1,5 +1,9 @@
 package com.stanislavlyalin.pomodoroapp
 
+import android.annotation.SuppressLint
+import android.app.AlarmManager
+import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.media.MediaPlayer
@@ -13,12 +17,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.setMargins
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.WorkRequest
 import java.util.Calendar
-import java.util.UUID
-import java.util.concurrent.TimeUnit
 import kotlin.math.min
 
 class MainActivity : AppCompatActivity() {
@@ -35,7 +34,8 @@ class MainActivity : AppCompatActivity() {
     private var startTime: Long = 0L
     private var timer: CountDownTimer? = null
     private var lastResetDay: Int = -1
-    private var workRequestId: UUID? = null         // Background timer ID
+    private var pendingRequestCode: Int? = null
+    private lateinit var alarmManager: AlarmManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,8 +61,10 @@ class MainActivity : AppCompatActivity() {
         totalPomodoros = sharedPreferences.getInt(Constants.TOTAL_POMODOROS_KEY, 12)
         pomodoroDuration =
             sharedPreferences.getLong(Constants.POMODORO_DURATION_KEY, 25 * 60 * 1000L)
-        sharedPreferences.getString(Constants.WORK_REQUEST_ID_KEY, null)?.let {
-            workRequestId = UUID.fromString(it)
+        pendingRequestCode = if (sharedPreferences.contains(Constants.PENDING_REQUEST_CODE_KEY)) {
+            sharedPreferences.getInt(Constants.PENDING_REQUEST_CODE_KEY, 0)
+        } else {
+            null
         }
         val currentTime = System.currentTimeMillis()
         startTime = sharedPreferences.getLong(Constants.START_TIME_KEY, currentTime)
@@ -74,14 +76,14 @@ class MainActivity : AppCompatActivity() {
         generateTomatoImages()
         updateTomatoes()
 
+        alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
         if (remainingTime in 1..<pomodoroDuration) {
             // Restore and continue timer
             resumeTimer(remainingTime)
 
             // If we launched a program with a background timer running, stop it
-            workRequestId?.let {
-                WorkManager.getInstance(this).cancelWorkById(it)
-            }
+            cancelAlarmTimer()
         } else {
             timerText.text = formatPomodoroDuration(pomodoroDuration)
         }
@@ -106,7 +108,7 @@ class MainActivity : AppCompatActivity() {
         if (timer != null) {
             val currentTime = System.currentTimeMillis()
             val remainingDuration = startTime + pomodoroDuration - currentTime
-            startTimerWithWorkManager(remainingDuration)
+            startAlarmManagerTimer(remainingDuration)
         }
     }
 
@@ -160,24 +162,25 @@ class MainActivity : AppCompatActivity() {
         sharedPreferences.withPrefs { it.putLong(Constants.START_TIME_KEY, startTime) }
     }
 
-    private fun startTimerWithWorkManager(durationMillis: Long) {
-        workRequestId?.let { WorkManager.getInstance(this).cancelWorkById(it) }
+    @SuppressLint("ScheduleExactAlarm")
+    private fun startAlarmManagerTimer(durationMillis: Long) {
+        val intent = Intent(this, AlarmReceiver::class.java)
+        val pendingRequestCode = 0
+        val pendingIntent = PendingIntent.getBroadcast(
+            this,
+            pendingRequestCode,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT
+        )
 
-        // Create OneTimeWorkRequest to be executed after a specified time
-        val timerRequest: WorkRequest = OneTimeWorkRequestBuilder<PomodoroWorker>()
-            .setInitialDelay(durationMillis, TimeUnit.MILLISECONDS) // Set the delay time
-            .build()
-
-        workRequestId = timerRequest.id
-
-        // Launch WorkManager to complete the task
-        WorkManager.getInstance(this).enqueue(timerRequest)
+        alarmManager.setExactAndAllowWhileIdle(
+            AlarmManager.RTC_WAKEUP,
+            System.currentTimeMillis() + durationMillis,
+            pendingIntent
+        )
 
         sharedPreferences.withPrefs {
-            it.putString(
-                Constants.WORK_REQUEST_ID_KEY,
-                workRequestId.toString()
-            )
+            it.putInt(Constants.PENDING_REQUEST_CODE_KEY, pendingRequestCode)
         }
     }
 
@@ -307,12 +310,17 @@ class MainActivity : AppCompatActivity() {
             saveData()
         }
 
-        // Canceling a WorkManager task
-        workRequestId?.let {
-            WorkManager.getInstance(this).cancelWorkById(it)
-        }
-
+        cancelAlarmTimer()
         sharedPreferences.withPrefs { it.remove(Constants.START_TIME_KEY) }
+    }
+
+    private fun cancelAlarmTimer() {
+        pendingRequestCode?.let {
+            val intent = Intent(this, AlarmReceiver::class.java)
+            val pendingIntent =
+                PendingIntent.getBroadcast(this, it, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+            alarmManager.cancel(pendingIntent)
+        }
     }
 
     private fun formatPomodoroDuration(durationMillis: Long): String {
