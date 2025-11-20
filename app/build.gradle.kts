@@ -35,7 +35,7 @@ android {
             useSupportLibrary = true
         }
 
-        archivesName = "enjoy-${gitCommitHash}"
+        archivesName = "pomodoro-${gitCommitHash}"
         buildConfigField("String", "COMMIT_HASH", "\"$gitCommitHash\"")
     }
 

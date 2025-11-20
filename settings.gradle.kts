@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "PomodoroApp"
+rootProject.name = "Pomodoro"
 include(":app")
  
