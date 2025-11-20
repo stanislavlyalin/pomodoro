@@ -20,4 +20,12 @@
     <string name="withoutTomato">Без помидора</string>
     <string name="cancel">Отмена</string>
     <string name="version_info">Version: %1$s\nCommit: %2$s</string>
+    <string name="pomodoro_finished_title">Помидорка готова!</string>
+    <string name="pomodoro_finished_text">Время перерыва. Нажмите для продолжения.</string>
+    <string name="channel_name">Таймер Помидора (Оповещения)</string>
+    <string name="channel_description">Звуковые и вибрационные оповещения о завершении рабочего интервала.</string>
+    <string name="exact_alarm_permission_message">Для корректной работы таймера в фоновом режиме (точное срабатывание) необходимо предоставить разрешение \"Точные будильники\".</string>
+    <string name="permission_required">Требуется разрешение ⏰</string>
+    <string name="open_settings">Перейти к настройкам</string>
+    <string name="alarm_permission_denied">Точное время завершения таймера без разрешения не гарантируется.</string>
 </resources>

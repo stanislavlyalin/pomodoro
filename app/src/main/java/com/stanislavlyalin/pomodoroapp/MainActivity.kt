@@ -5,15 +5,23 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.Manifest
 import android.media.MediaPlayer
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.widget.Button
 import android.widget.GridLayout
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.view.setMargins
 import java.util.Calendar
 import kotlin.math.min
@@ -35,11 +43,11 @@ class MainActivity : AppCompatActivity(), TimerListener {
     private val tomatoImages = mutableListOf<ImageView>()
     private var startTime: Long = 0L
     private val ALARM_REQUEST_CODE = 0
+    private val NOTIFICATION_PERMISSION_REQUEST_CODE = 100
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Setting up the layout
         setContentView(R.layout.activity_main)
 
         repository = PomodoroRepository(this)
@@ -53,6 +61,8 @@ class MainActivity : AppCompatActivity(), TimerListener {
         restoreTimerState()
 
         setupClickListeners()
+
+        requestNotificationPermission()
     }
 
     private fun initViews() {
@@ -137,7 +147,51 @@ class MainActivity : AppCompatActivity(), TimerListener {
         }
     }
 
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    NOTIFICATION_PERMISSION_REQUEST_CODE
+                )
+            }
+        }
+    }
+
+    private fun checkAndRequestExactAlarmPermission(): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val alarmManager = getSystemService(ALARM_SERVICE) as AlarmManager
+
+            if (!alarmManager.canScheduleExactAlarms()) {
+                AlertDialog.Builder(this)
+                    .setTitle(R.string.permission_required)
+                    .setMessage(R.string.exact_alarm_permission_message)
+                    .setPositiveButton(R.string.open_settings) { dialog, which ->
+                        val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+                        intent.data = Uri.fromParts("package", packageName, null)
+                        startActivity(intent)
+                    }
+                    .setNegativeButton(R.string.cancel) { dialog, which ->
+                        Toast.makeText(
+                            this,
+                            getString(R.string.alarm_permission_denied),
+                            Toast.LENGTH_LONG
+                        ).show()
+                        dialog.dismiss()
+                    }
+                    .show()
+                return false
+            }
+        }
+        return true
+    }
+
     private fun startTimerSession() {
+        if (!checkAndRequestExactAlarmPermission()) {
+            return
+        }
+
         startTime = System.currentTimeMillis()
         repository.startSession(startTime)
 
@@ -170,8 +224,10 @@ class MainActivity : AppCompatActivity(), TimerListener {
     }
 
     override fun onFinish() {
-        playSound()
-        stopTimerSession(completedSuccessfully = true)
+        if (repository.isTimerActive()) {
+            playSound()
+            stopTimerSession(completedSuccessfully = true)
+        }
     }
 
     override fun onStop() {

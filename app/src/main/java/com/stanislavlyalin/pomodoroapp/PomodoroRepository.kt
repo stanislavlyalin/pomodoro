@@ -19,7 +19,18 @@ class PomodoroRepository(context: Context) {
         get() = prefs.getInt(Constants.LAST_RESET_DAY_KEY, -1)
         set(value) = prefs.withPrefs { it.putInt(Constants.LAST_RESET_DAY_KEY, value) }
 
+    fun isTimerActive(): Boolean {
+        return prefs.contains(Constants.START_TIME_KEY)
+    }
+
     fun getStartTime(): Long = prefs.getLong(Constants.START_TIME_KEY, 0L)
+
+    fun clearTimerState() {
+        prefs.withPrefs {
+            it.remove(Constants.START_TIME_KEY)
+            it.remove(Constants.PENDING_REQUEST_CODE_KEY)
+        }
+    }
 
     fun startSession(startTime: Long) {
         prefs.withPrefs { it.putLong(Constants.START_TIME_KEY, startTime) }
