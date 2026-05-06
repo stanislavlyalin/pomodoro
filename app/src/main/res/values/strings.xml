@@ -16,6 +16,9 @@
     <string name="restartToApplySettings">Настройки сохранены. Перезапустите приложение для применения изменений.</string>
     <string name="pomodoro_count_label">Количество помидоров за день</string>
     <string name="pomodoro_duration_label">Длительность помидора в минутах</string>
+    <string name="pomodoro_labels_checkbox">Помидоры с метками</string>
+    <string name="pomodoro_label_dialog_title">Метка помидора</string>
+    <string name="pomodoro_label_hint">До 15 символов</string>
     <string name="withTomato">С помидором</string>
     <string name="withoutTomato">Без помидора</string>
     <string name="cancel">Отмена</string>

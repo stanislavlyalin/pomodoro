@@ -8,5 +8,9 @@ object Constants {
     const val PENDING_REQUEST_CODE_KEY = "pendingRequestCode"
     const val TOTAL_POMODOROS_KEY = "totalPomodoros"
     const val POMODORO_DURATION_KEY = "pomodoroDuration"
+    const val POMODORO_LABELS_ENABLED_KEY = "pomodoroLabelsEnabled"
+    const val POMODORO_LABELS_KEY = "pomodoroLabels"
+    const val LAST_POMODORO_LABEL_KEY = "lastPomodoroLabel"
+    const val PENDING_POMODORO_LABEL_KEY = "pendingPomodoroLabel"
     const val TIME_FORMAT = "%02d:%02d"
 }

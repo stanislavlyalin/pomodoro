@@ -22,9 +22,8 @@ class AlarmReceiver : BroadcastReceiver() {
         val repository = PomodoroRepository(context)
 
         if (repository.isTimerActive()) {
-            incrementPomodoroCount(context)
+            repository.completeActiveSession()
             showNotification(context)
-            clearTimerState(context)
         }
     }
 
@@ -79,15 +78,4 @@ class AlarmReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun incrementPomodoroCount(context: Context) {
-        val sharedPreferences =
-            context.getSharedPreferences(Constants.PREFERENCES, Context.MODE_PRIVATE)
-        val pomodoroCount = sharedPreferences.getInt(Constants.POMODORO_COUNT_KEY, 0) + 1
-        sharedPreferences.withPrefs { it.putInt(Constants.POMODORO_COUNT_KEY, pomodoroCount) }
-    }
-
-    private fun clearTimerState(context: Context) {
-        val repository = PomodoroRepository(context)
-        repository.clearTimerState()
-    }
 }

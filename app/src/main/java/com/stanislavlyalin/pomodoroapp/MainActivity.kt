@@ -12,10 +12,15 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.text.InputFilter
+import android.text.InputType
+import android.view.Gravity
 import android.widget.Button
+import android.widget.EditText
 import android.widget.GridLayout
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -41,6 +46,7 @@ class MainActivity : AppCompatActivity(), TimerListener {
 
     // Local State (Logic)
     private val tomatoImages = mutableListOf<ImageView>()
+    private val tomatoLabels = mutableListOf<TextView>()
     private var startTime: Long = 0L
     private val ALARM_REQUEST_CODE = 0
     private val NOTIFICATION_PERMISSION_REQUEST_CODE = 100
@@ -77,7 +83,7 @@ class MainActivity : AppCompatActivity(), TimerListener {
     private fun checkDayReset() {
         val currentDay = Calendar.getInstance().get(Calendar.DAY_OF_YEAR)
         if (currentDay != repository.lastResetDay) {
-            repository.pomodoroCount = 0
+            repository.clearDailyProgress()
             repository.lastResetDay = currentDay
         }
     }
@@ -86,39 +92,74 @@ class MainActivity : AppCompatActivity(), TimerListener {
         tomatoGrid.columnCount = 6
         tomatoGrid.removeAllViews()
         tomatoImages.clear()
+        tomatoLabels.clear()
 
         val size = resources.getDimensionPixelSize(R.dimen.tomato_size)
         val margin = resources.getDimensionPixelSize(R.dimen.tomato_margin)
         val total = repository.totalPomodoros
+        val labels = repository.getPomodoroLabels()
 
         for (i in 0 until total) {
+            val cellView = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+            }
             val imageView = ImageView(this)
             val params = GridLayout.LayoutParams().apply {
                 width = size
-                height = size
+                height = LinearLayout.LayoutParams.WRAP_CONTENT
                 setMargins(margin)
             }
-            imageView.layoutParams = params
+            cellView.layoutParams = params
+            imageView.layoutParams = LinearLayout.LayoutParams(size, size)
             val imageRes = if (i < repository.pomodoroCount) R.drawable.tomato_red else R.drawable.tomato_green
             imageView.setImageResource(imageRes)
 
-            tomatoGrid.addView(imageView)
+            val labelView = TextView(this).apply {
+                layoutParams = LinearLayout.LayoutParams(size, LinearLayout.LayoutParams.WRAP_CONTENT)
+                gravity = Gravity.CENTER
+                includeFontPadding = false
+                maxLines = 2
+                textSize = 10f
+                text = if (repository.pomodoroLabelsEnabled && i < repository.pomodoroCount) {
+                    formatPomodoroLabel(labels.getOrNull(i).orEmpty())
+                } else {
+                    ""
+                }
+            }
+
+            cellView.addView(imageView)
+            cellView.addView(labelView)
+            tomatoGrid.addView(cellView)
             tomatoImages.add(imageView)
+            tomatoLabels.add(labelView)
         }
     }
 
     private fun refreshTomatoes() {
         val count = repository.pomodoroCount
+        val labels = repository.getPomodoroLabels()
         tomatoImages.forEachIndexed { index, imageView ->
             val res = if (index < count) R.drawable.tomato_red else R.drawable.tomato_green
             imageView.setImageResource(res)
+            tomatoLabels[index].text = if (repository.pomodoroLabelsEnabled && index < count) {
+                formatPomodoroLabel(labels.getOrNull(index).orEmpty())
+            } else {
+                ""
+            }
         }
     }
 
     private fun setupClickListeners() {
         startButton.setOnClickListener {
             when (pomodoroTimer.state) {
-                TimerState.IDLE -> startTimerSession()
+                TimerState.IDLE -> {
+                    if (repository.pomodoroLabelsEnabled) {
+                        showPomodoroLabelDialog { label -> startTimerSession(label) }
+                    } else {
+                        startTimerSession()
+                    }
+                }
                 TimerState.RUNNING -> showEarlyFinishDialog()
             }
         }
@@ -142,7 +183,7 @@ class MainActivity : AppCompatActivity(), TimerListener {
             updateUIState()
             cancelAlarm()
         } else {
-            repository.completeSession()
+            repository.completeActiveSession()
             refreshTomatoes()
         }
     }
@@ -187,13 +228,13 @@ class MainActivity : AppCompatActivity(), TimerListener {
         return true
     }
 
-    private fun startTimerSession() {
+    private fun startTimerSession(label: String = "") {
         if (!checkAndRequestExactAlarmPermission()) {
             return
         }
 
         startTime = System.currentTimeMillis()
-        repository.startSession(startTime)
+        repository.startSession(startTime, label)
 
         pomodoroTimer.start(repository.pomodoroDuration)
         updateUIState()
@@ -206,14 +247,8 @@ class MainActivity : AppCompatActivity(), TimerListener {
         cancelAlarm()
 
         if (completedSuccessfully) {
-            val currentCount = repository.pomodoroCount
-            if (currentCount < repository.totalPomodoros) {
-                val newCount = currentCount + 1
-                repository.completeSession(newPomodoroCount = newCount)
-                refreshTomatoes()
-            } else {
-                repository.completeSession()
-            }
+            repository.completeActiveSession()
+            refreshTomatoes()
         } else {
             repository.completeSession()
         }
@@ -241,6 +276,9 @@ class MainActivity : AppCompatActivity(), TimerListener {
     override fun onStart() {
         super.onStart()
         cancelAlarm()
+        if (::repository.isInitialized && tomatoLabels.isNotEmpty()) {
+            refreshTomatoes()
+        }
     }
 
     @SuppressLint("ScheduleExactAlarm")
@@ -304,6 +342,56 @@ class MainActivity : AppCompatActivity(), TimerListener {
         }
 
         dialog.show()
+    }
+
+    private fun showPomodoroLabelDialog(onLabelConfirmed: (String) -> Unit) {
+        val labelInput = EditText(this).apply {
+            setText(repository.lastPomodoroLabel.take(15))
+            setSelection(text.length)
+            hint = getString(R.string.pomodoro_label_hint)
+            filters = arrayOf(InputFilter.LengthFilter(15))
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+            setSingleLine(true)
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.pomodoro_label_dialog_title)
+            .setView(labelInput)
+            .setPositiveButton(R.string.Start) { _, _ ->
+                onLabelConfirmed(labelInput.text.toString())
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun formatPomodoroLabel(label: String): String {
+        val trimmedLabel = label.trim().take(15)
+        if (trimmedLabel.length <= 8) {
+            return trimmedLabel
+        }
+
+        val preferredBreakIndex = findPomodoroLabelBreakIndex(trimmedLabel)
+        val breakIndex = preferredBreakIndex ?: 8
+        val firstLine = trimmedLabel.substring(0, breakIndex).trimEnd(' ', '-')
+        val secondLineStart = if (preferredBreakIndex != null) breakIndex + 1 else breakIndex
+        val secondLine = trimmedLabel.substring(secondLineStart).trimStart(' ', '-')
+
+        return "$firstLine\n$secondLine"
+    }
+
+    private fun findPomodoroLabelBreakIndex(label: String): Int? {
+        val minBreakIndex = label.length - 8
+        val maxBreakIndex = 8
+
+        return label
+            .indices
+            .filter { index ->
+                index in minBreakIndex..maxBreakIndex &&
+                    index > 0 &&
+                    index < label.lastIndex &&
+                    (label[index] == ' ' || label[index] == '-')
+            }
+            .lastOrNull()
     }
 
     private fun formatPomodoroDuration(durationMillis: Long): String {
