@@ -25,6 +25,10 @@
     <string name="version_info">Version: %1$s\nCommit: %2$s</string>
     <string name="pomodoro_finished_title">Помидорка готова!</string>
     <string name="pomodoro_finished_text">Время перерыва. Нажмите для продолжения.</string>
+    <string name="timer_running_title">Помидорка в процессе</string>
+    <string name="timer_running_text">Таймер продолжит работать в фоне.</string>
+    <string name="timer_running_channel_name">Активный таймер Помидора</string>
+    <string name="timer_running_channel_description">Постоянное уведомление, пока идёт рабочий интервал.</string>
     <string name="channel_name">Таймер Помидора (Оповещения)</string>
     <string name="channel_description">Звуковые и вибрационные оповещения о завершении рабочего интервала.</string>
     <string name="exact_alarm_permission_message">Для корректной работы таймера в фоновом режиме (точное срабатывание) необходимо предоставить разрешение \"Точные будильники\".</string>

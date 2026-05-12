@@ -27,10 +27,25 @@ class PomodoroRepository(context: Context) {
         get() = prefs.getString(Constants.LAST_POMODORO_LABEL_KEY, "") ?: ""
 
     fun isTimerActive(): Boolean {
-        return prefs.contains(Constants.START_TIME_KEY)
+        return getEndTime() > 0L
     }
 
     fun getStartTime(): Long = prefs.getLong(Constants.START_TIME_KEY, 0L)
+
+    fun getEndTime(): Long {
+        val endTime = prefs.getLong(Constants.END_TIME_KEY, 0L)
+        if (endTime > 0L) {
+            return endTime
+        }
+
+        val legacyStartTime = getStartTime()
+        return if (legacyStartTime > 0L) legacyStartTime + pomodoroDuration else 0L
+    }
+
+    fun getRemainingTime(nowMillis: Long = System.currentTimeMillis()): Long {
+        val endTime = getEndTime()
+        return if (endTime > 0L) endTime - nowMillis else 0L
+    }
 
     fun getPomodoroLabels(): List<String> {
         val labelsJson = prefs.getString(Constants.POMODORO_LABELS_KEY, null) ?: return emptyList()
@@ -48,24 +63,27 @@ class PomodoroRepository(context: Context) {
     }
 
     fun clearTimerState() {
-        prefs.withPrefs {
+        prefs.withCommittedPrefs {
             it.remove(Constants.START_TIME_KEY)
+            it.remove(Constants.END_TIME_KEY)
             it.remove(Constants.PENDING_REQUEST_CODE_KEY)
             it.remove(Constants.PENDING_POMODORO_LABEL_KEY)
         }
     }
 
-    fun startSession(startTime: Long, label: String = "") {
-        prefs.withPrefs {
+    fun startSession(startTime: Long, endTime: Long, label: String = "") {
+        prefs.withCommittedPrefs {
             it.putLong(Constants.START_TIME_KEY, startTime)
+            it.putLong(Constants.END_TIME_KEY, endTime)
             it.putString(Constants.PENDING_POMODORO_LABEL_KEY, label)
             it.putString(Constants.LAST_POMODORO_LABEL_KEY, label)
         }
     }
 
     fun completeSession(newPomodoroCount: Int? = null) {
-        prefs.withPrefs { editor ->
+        prefs.withCommittedPrefs { editor ->
             editor.remove(Constants.START_TIME_KEY)
+            editor.remove(Constants.END_TIME_KEY)
             editor.remove(Constants.PENDING_POMODORO_LABEL_KEY)
             if (newPomodoroCount != null) {
                 editor.putInt(Constants.POMODORO_COUNT_KEY, newPomodoroCount)
@@ -74,6 +92,10 @@ class PomodoroRepository(context: Context) {
     }
 
     fun completeActiveSession(): Boolean {
+        if (!isTimerActive()) {
+            return false
+        }
+
         val currentCount = pomodoroCount
         val canAddPomodoro = currentCount < totalPomodoros
         val nextCount = if (canAddPomodoro) currentCount + 1 else currentCount
@@ -91,8 +113,9 @@ class PomodoroRepository(context: Context) {
             }
         }
 
-        prefs.withPrefs { editor ->
+        prefs.withCommittedPrefs { editor ->
             editor.remove(Constants.START_TIME_KEY)
+            editor.remove(Constants.END_TIME_KEY)
             editor.remove(Constants.PENDING_REQUEST_CODE_KEY)
             editor.remove(Constants.PENDING_POMODORO_LABEL_KEY)
             if (canAddPomodoro) {
@@ -103,6 +126,6 @@ class PomodoroRepository(context: Context) {
             }
         }
 
-        return canAddPomodoro
+        return true
     }
 }

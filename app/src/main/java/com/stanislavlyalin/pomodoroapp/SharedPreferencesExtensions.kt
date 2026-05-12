@@ -7,3 +7,9 @@ inline fun SharedPreferences.withPrefs(editorAction: (SharedPreferences.Editor) 
     editorAction(editor)
     editor.apply()
 }
+
+inline fun SharedPreferences.withCommittedPrefs(editorAction: (SharedPreferences.Editor) -> Unit): Boolean {
+    val editor = edit()
+    editorAction(editor)
+    return editor.commit()
+}

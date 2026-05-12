@@ -1,13 +1,8 @@
 package com.stanislavlyalin.pomodoroapp
 
-import android.annotation.SuppressLint
-import android.app.AlarmManager
-import android.app.PendingIntent
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.Manifest
-import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -42,13 +37,10 @@ class MainActivity : AppCompatActivity(), TimerListener {
     // Dependencies
     private lateinit var repository: PomodoroRepository
     private lateinit var pomodoroTimer: PomodoroTimer
-    private lateinit var alarmManager: AlarmManager
 
     // Local State (Logic)
     private val tomatoImages = mutableListOf<ImageView>()
     private val tomatoLabels = mutableListOf<TextView>()
-    private var startTime: Long = 0L
-    private val ALARM_REQUEST_CODE = 0
     private val NOTIFICATION_PERMISSION_REQUEST_CODE = 100
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,7 +50,6 @@ class MainActivity : AppCompatActivity(), TimerListener {
 
         repository = PomodoroRepository(this)
         pomodoroTimer = PomodoroTimer(this)
-        alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
         initViews()
         checkDayReset()
@@ -169,22 +160,28 @@ class MainActivity : AppCompatActivity(), TimerListener {
     }
 
     private fun restoreTimerState() {
-        val savedStartTime = repository.getStartTime()
         val duration = repository.pomodoroDuration
 
-        if (savedStartTime == 0L) return
+        if (!repository.isTimerActive()) {
+            pomodoroTimer.stop()
+            timerText.text = formatPomodoroDuration(duration)
+            updateUIState()
+            return
+        }
 
-        val currentTime = System.currentTimeMillis()
-        val remainingTime = min(duration, duration - (currentTime - savedStartTime))
+        val remainingTime = min(duration, repository.getRemainingTime())
 
         if (remainingTime > 0) {
-            startTime = savedStartTime
+            pomodoroTimer.stop()
             pomodoroTimer.start(remainingTime)
+            timerText.text = formatPomodoroDuration(remainingTime)
             updateUIState()
-            cancelAlarm()
+            if (PomodoroAlarmScheduler.canScheduleExactAlarms(this)) {
+                PomodoroAlarmScheduler.schedule(this, repository.getEndTime())
+            }
+            PomodoroTimerService.start(this)
         } else {
-            repository.completeActiveSession()
-            refreshTomatoes()
+            finishExpiredTimer()
         }
     }
 
@@ -202,9 +199,7 @@ class MainActivity : AppCompatActivity(), TimerListener {
 
     private fun checkAndRequestExactAlarmPermission(): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val alarmManager = getSystemService(ALARM_SERVICE) as AlarmManager
-
-            if (!alarmManager.canScheduleExactAlarms()) {
+            if (!PomodoroAlarmScheduler.canScheduleExactAlarms(this)) {
                 AlertDialog.Builder(this)
                     .setTitle(R.string.permission_required)
                     .setMessage(R.string.exact_alarm_permission_message)
@@ -233,18 +228,23 @@ class MainActivity : AppCompatActivity(), TimerListener {
             return
         }
 
-        startTime = System.currentTimeMillis()
-        repository.startSession(startTime, label)
+        val startTime = System.currentTimeMillis()
+        val endTime = startTime + repository.pomodoroDuration
+        repository.startSession(startTime, endTime, label)
+        PomodoroAlarmScheduler.schedule(this, endTime)
+        PomodoroTimerService.start(this)
 
+        pomodoroTimer.stop()
         pomodoroTimer.start(repository.pomodoroDuration)
+        timerText.text = formatPomodoroDuration(repository.pomodoroDuration)
         updateUIState()
     }
 
     private fun stopTimerSession(completedSuccessfully: Boolean) {
         pomodoroTimer.stop()
+        PomodoroTimerService.stop(this)
+        PomodoroAlarmScheduler.cancel(this)
         timerText.text = formatPomodoroDuration(repository.pomodoroDuration)
-        updateUIState()
-        cancelAlarm()
 
         if (completedSuccessfully) {
             repository.completeActiveSession()
@@ -252,6 +252,8 @@ class MainActivity : AppCompatActivity(), TimerListener {
         } else {
             repository.completeSession()
         }
+
+        updateUIState()
     }
 
     override fun onTick(millisUntilFinished: Long) {
@@ -259,45 +261,15 @@ class MainActivity : AppCompatActivity(), TimerListener {
     }
 
     override fun onFinish() {
-        if (repository.isTimerActive()) {
-            playSound()
-            stopTimerSession(completedSuccessfully = true)
-        }
-    }
-
-    override fun onStop() {
-        super.onStop()
-        if (pomodoroTimer.state == TimerState.RUNNING) {
-            val endTime = startTime + repository.pomodoroDuration
-            scheduleAlarm(endTime)
-        }
+        restoreTimerState()
     }
 
     override fun onStart() {
         super.onStart()
-        cancelAlarm()
+        restoreTimerState()
         if (::repository.isInitialized && tomatoLabels.isNotEmpty()) {
             refreshTomatoes()
         }
-    }
-
-    @SuppressLint("ScheduleExactAlarm")
-    private fun scheduleAlarm(triggerTimeMillis: Long) {
-        val intent = Intent(this, AlarmReceiver::class.java)
-        val pendingIntent = PendingIntent.getBroadcast(
-            this, ALARM_REQUEST_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        alarmManager.setExactAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP, triggerTimeMillis, pendingIntent
-        )
-    }
-
-    private fun cancelAlarm() {
-        val intent = Intent(this, AlarmReceiver::class.java)
-        val pendingIntent = PendingIntent.getBroadcast(
-            this, ALARM_REQUEST_CODE, intent, PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
-        )
-        pendingIntent?.let { alarmManager.cancel(it); it.cancel() }
     }
 
     private fun updateUIState() {
@@ -313,12 +285,19 @@ class MainActivity : AppCompatActivity(), TimerListener {
         }
     }
 
-    private fun playSound() {
-        val mediaPlayer = MediaPlayer.create(this, R.raw.notification_sound)
-        mediaPlayer?.setOnCompletionListener { mp ->
-            mp.release()
+    private fun finishExpiredTimer() {
+        pomodoroTimer.stop()
+        PomodoroTimerService.stop(this)
+        PomodoroAlarmScheduler.cancel(this)
+        val completed = repository.completeActiveSession()
+        timerText.text = formatPomodoroDuration(repository.pomodoroDuration)
+        updateUIState()
+
+        if (completed) {
+            refreshTomatoes()
+            PomodoroNotifier.notifyTimerFinished(this)
+            PomodoroAlarmSoundPlayer.play(this)
         }
-        mediaPlayer?.start()
     }
 
     private fun showEarlyFinishDialog() {

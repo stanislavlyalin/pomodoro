@@ -5,6 +5,7 @@ object Constants {
     const val POMODORO_COUNT_KEY = "pomodoroCount"
     const val LAST_RESET_DAY_KEY = "lastResetDay"
     const val START_TIME_KEY = "startTime"
+    const val END_TIME_KEY = "endTime"
     const val PENDING_REQUEST_CODE_KEY = "pendingRequestCode"
     const val TOTAL_POMODOROS_KEY = "totalPomodoros"
     const val POMODORO_DURATION_KEY = "pomodoroDuration"
