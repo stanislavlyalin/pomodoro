@@ -53,6 +53,34 @@ class PomodoroRepository(context: Context) {
         return List(labels.length()) { index -> labels.optString(index, "") }
     }
 
+    fun getSavedPomodoroLabels(): List<String> {
+        val labelsJson = prefs.getString(Constants.SAVED_POMODORO_LABELS_KEY, null) ?: return emptyList()
+        val labels = JSONArray(labelsJson)
+        return List(labels.length()) { index -> labels.optString(index, "") }
+            .map { it.normalizePomodoroLabel() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+    }
+
+    fun savePomodoroLabel(label: String) {
+        val normalizedLabel = label.normalizePomodoroLabel()
+        if (normalizedLabel.isEmpty()) {
+            return
+        }
+
+        val savedLabels = getSavedPomodoroLabels()
+        if (savedLabels.any { it.equals(normalizedLabel, ignoreCase = true) }) {
+            return
+        }
+
+        prefs.withPrefs {
+            it.putString(
+                Constants.SAVED_POMODORO_LABELS_KEY,
+                JSONArray(savedLabels + normalizedLabel).toString()
+            )
+        }
+    }
+
     fun clearDailyProgress() {
         prefs.withPrefs {
             it.putInt(Constants.POMODORO_COUNT_KEY, 0)
@@ -72,12 +100,14 @@ class PomodoroRepository(context: Context) {
     }
 
     fun startSession(startTime: Long, endTime: Long, label: String = "") {
+        val normalizedLabel = label.normalizePomodoroLabel()
         prefs.withCommittedPrefs {
             it.putLong(Constants.START_TIME_KEY, startTime)
             it.putLong(Constants.END_TIME_KEY, endTime)
-            it.putString(Constants.PENDING_POMODORO_LABEL_KEY, label)
-            it.putString(Constants.LAST_POMODORO_LABEL_KEY, label)
+            it.putString(Constants.PENDING_POMODORO_LABEL_KEY, normalizedLabel)
+            it.putString(Constants.LAST_POMODORO_LABEL_KEY, normalizedLabel)
         }
+        savePomodoroLabel(normalizedLabel)
     }
 
     fun completeSession(newPomodoroCount: Int? = null) {
@@ -129,3 +159,5 @@ class PomodoroRepository(context: Context) {
         return true
     }
 }
+
+private fun String.normalizePomodoroLabel(): String = trim().take(15)

@@ -10,8 +10,9 @@ import android.provider.Settings
 import android.text.InputFilter
 import android.text.InputType
 import android.view.Gravity
+import android.widget.ArrayAdapter
+import android.widget.AutoCompleteTextView
 import android.widget.Button
-import android.widget.EditText
 import android.widget.GridLayout
 import android.widget.ImageButton
 import android.widget.ImageView
@@ -324,13 +325,30 @@ class MainActivity : AppCompatActivity(), TimerListener {
     }
 
     private fun showPomodoroLabelDialog(onLabelConfirmed: (String) -> Unit) {
-        val labelInput = EditText(this).apply {
-            setText(repository.lastPomodoroLabel.take(15))
-            setSelection(text.length)
+        val savedLabels = repository.getSavedPomodoroLabels()
+        val labelInput = AutoCompleteTextView(this).apply {
+            setAdapter(
+                ArrayAdapter(
+                    this@MainActivity,
+                    android.R.layout.simple_dropdown_item_1line,
+                    savedLabels
+                )
+            )
             hint = getString(R.string.pomodoro_label_hint)
             filters = arrayOf(InputFilter.LengthFilter(15))
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
             setSingleLine(true)
+            threshold = 0
+            setOnClickListener {
+                if (savedLabels.isNotEmpty()) {
+                    showDropDown()
+                }
+            }
+            setOnFocusChangeListener { _, hasFocus ->
+                if (hasFocus && savedLabels.isNotEmpty()) {
+                    showDropDown()
+                }
+            }
         }
 
         AlertDialog.Builder(this)
