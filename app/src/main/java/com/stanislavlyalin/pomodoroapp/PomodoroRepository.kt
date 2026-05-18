@@ -2,6 +2,8 @@ package com.stanislavlyalin.pomodoroapp
 
 import android.content.Context
 import org.json.JSONArray
+import org.json.JSONObject
+import java.util.Locale
 
 class PomodoroRepository(context: Context) {
     private val prefs = context.getSharedPreferences(Constants.PREFERENCES, Context.MODE_PRIVATE)
@@ -59,7 +61,7 @@ class PomodoroRepository(context: Context) {
         return List(labels.length()) { index -> labels.optString(index, "") }
             .map { it.normalizePomodoroLabel() }
             .filter { it.isNotEmpty() }
-            .distinct()
+            .distinctBy { it.pomodoroLabelKey() }
     }
 
     fun savePomodoroLabel(label: String) {
@@ -69,7 +71,9 @@ class PomodoroRepository(context: Context) {
         }
 
         val savedLabels = getSavedPomodoroLabels()
-        if (savedLabels.any { it.equals(normalizedLabel, ignoreCase = true) }) {
+        val labelExists = savedLabels.any { it.equals(normalizedLabel, ignoreCase = true) }
+        ensurePomodoroLabelColor(normalizedLabel)
+        if (labelExists) {
             return
         }
 
@@ -79,6 +83,37 @@ class PomodoroRepository(context: Context) {
                 JSONArray(savedLabels + normalizedLabel).toString()
             )
         }
+    }
+
+    fun getPomodoroLabelColor(label: String): Int? {
+        val normalizedLabel = label.normalizePomodoroLabel()
+        if (normalizedLabel.isEmpty()) {
+            return null
+        }
+
+        return ensurePomodoroLabelColor(normalizedLabel)
+    }
+
+    private fun ensurePomodoroLabelColor(label: String): Int {
+        val labelKey = label.pomodoroLabelKey()
+        val labelColors = getPomodoroLabelColors()
+        val existingColor = labelColors.optInt(labelKey, 0)
+        if (existingColor != 0) {
+            return existingColor
+        }
+
+        val color = generatePomodoroLabelColor(labelColors)
+        labelColors.put(labelKey, color)
+        prefs.withPrefs {
+            it.putString(Constants.POMODORO_LABEL_COLORS_KEY, labelColors.toString())
+        }
+
+        return color
+    }
+
+    private fun getPomodoroLabelColors(): JSONObject {
+        val colorsJson = prefs.getString(Constants.POMODORO_LABEL_COLORS_KEY, null) ?: return JSONObject()
+        return JSONObject(colorsJson)
     }
 
     fun clearDailyProgress() {
@@ -161,3 +196,30 @@ class PomodoroRepository(context: Context) {
 }
 
 private fun String.normalizePomodoroLabel(): String = trim().take(15)
+
+private fun String.pomodoroLabelKey(): String = normalizePomodoroLabel().lowercase(Locale.ROOT)
+
+private fun generatePomodoroLabelColor(existingColors: JSONObject): Int {
+    val usedColors = existingColors.keys().asSequence()
+        .map { key -> existingColors.optInt(key, 0) }
+        .filter { it != 0 }
+        .toSet()
+    val availablePaletteColors = POMODORO_LABEL_COLOR_PALETTE.filterNot { it in usedColors }
+
+    return availablePaletteColors.randomOrNull() ?: POMODORO_LABEL_COLOR_PALETTE.random()
+}
+
+private val POMODORO_LABEL_COLOR_PALETTE = intArrayOf(
+    0xFFE67E22.toInt(),
+    0xFF1B5E20.toInt(),
+    0xFF1565C0.toInt(),
+    0xFFC62828.toInt(),
+    0xFF6A1B9A.toInt(),
+    0xFF00838F.toInt(),
+    0xFFAD1457.toInt(),
+    0xFF2E7D32.toInt(),
+    0xFFEF6C00.toInt(),
+    0xFF283593.toInt(),
+    0xFF5D4037.toInt(),
+    0xFF455A64.toInt()
+)

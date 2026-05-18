@@ -113,11 +113,7 @@ class MainActivity : AppCompatActivity(), TimerListener {
                 includeFontPadding = false
                 maxLines = 2
                 textSize = 10f
-                text = if (repository.pomodoroLabelsEnabled && i < repository.pomodoroCount) {
-                    formatPomodoroLabel(labels.getOrNull(i).orEmpty())
-                } else {
-                    ""
-                }
+                updatePomodoroLabelText(this, labels.getOrNull(i).orEmpty(), i < repository.pomodoroCount)
             }
 
             cellView.addView(imageView)
@@ -134,11 +130,7 @@ class MainActivity : AppCompatActivity(), TimerListener {
         tomatoImages.forEachIndexed { index, imageView ->
             val res = if (index < count) R.drawable.tomato_red else R.drawable.tomato_green
             imageView.setImageResource(res)
-            tomatoLabels[index].text = if (repository.pomodoroLabelsEnabled && index < count) {
-                formatPomodoroLabel(labels.getOrNull(index).orEmpty())
-            } else {
-                ""
-            }
+            updatePomodoroLabelText(tomatoLabels[index], labels.getOrNull(index).orEmpty(), index < count)
         }
     }
 
@@ -374,6 +366,17 @@ class MainActivity : AppCompatActivity(), TimerListener {
         val secondLine = trimmedLabel.substring(secondLineStart).trimStart(' ', '-')
 
         return "$firstLine\n$secondLine"
+    }
+
+    private fun updatePomodoroLabelText(labelView: TextView, label: String, isCompleted: Boolean) {
+        if (!repository.pomodoroLabelsEnabled || !isCompleted) {
+            labelView.text = ""
+            labelView.setTextColor(ContextCompat.getColor(this, android.R.color.black))
+            return
+        }
+
+        labelView.text = formatPomodoroLabel(label)
+        repository.getPomodoroLabelColor(label)?.let { labelView.setTextColor(it) }
     }
 
     private fun findPomodoroLabelBreakIndex(label: String): Int? {
