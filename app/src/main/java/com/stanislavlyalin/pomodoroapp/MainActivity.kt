@@ -319,6 +319,7 @@ class MainActivity : AppCompatActivity(), TimerListener {
     private fun showPomodoroLabelDialog(onLabelConfirmed: (String) -> Unit) {
         val savedLabels = repository.getSavedPomodoroLabels()
         val labelInput = AutoCompleteTextView(this).apply {
+            setText(repository.lastPomodoroLabel, false)
             setAdapter(
                 ArrayAdapter(
                     this@MainActivity,

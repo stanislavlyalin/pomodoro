@@ -12,6 +12,7 @@ object Constants {
     const val POMODORO_LABELS_ENABLED_KEY = "pomodoroLabelsEnabled"
     const val POMODORO_LABELS_KEY = "pomodoroLabels"
     const val SAVED_POMODORO_LABELS_KEY = "savedPomodoroLabels"
+    const val POMODORO_LABEL_LAST_USED_KEY = "pomodoroLabelLastUsed"
     const val POMODORO_LABEL_COLORS_KEY = "pomodoroLabelColors"
     const val LAST_POMODORO_LABEL_KEY = "lastPomodoroLabel"
     const val PENDING_POMODORO_LABEL_KEY = "pendingPomodoroLabel"

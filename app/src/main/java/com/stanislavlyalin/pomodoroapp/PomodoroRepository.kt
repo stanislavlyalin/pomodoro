@@ -56,6 +56,23 @@ class PomodoroRepository(context: Context) {
     }
 
     fun getSavedPomodoroLabels(): List<String> {
+        val labelLastUsed = getPomodoroLabelLastUsed()
+        return getSavedPomodoroLabelEntries()
+            .mapIndexed { index, label ->
+                SavedPomodoroLabel(
+                    label = label,
+                    lastUsedAt = labelLastUsed.optLong(label.pomodoroLabelKey(), 0L),
+                    index = index
+                )
+            }
+            .sortedWith(
+                compareByDescending<SavedPomodoroLabel> { it.lastUsedAt }
+                    .thenBy { it.index }
+            )
+            .map { it.label }
+    }
+
+    private fun getSavedPomodoroLabelEntries(): List<String> {
         val labelsJson = prefs.getString(Constants.SAVED_POMODORO_LABELS_KEY, null) ?: return emptyList()
         val labels = JSONArray(labelsJson)
         return List(labels.length()) { index -> labels.optString(index, "") }
@@ -82,6 +99,30 @@ class PomodoroRepository(context: Context) {
                 Constants.SAVED_POMODORO_LABELS_KEY,
                 JSONArray(savedLabels + normalizedLabel).toString()
             )
+        }
+    }
+
+    private fun recordPomodoroLabelUse(label: String, usedAtMillis: Long = System.currentTimeMillis()) {
+        val normalizedLabel = label.normalizePomodoroLabel()
+        if (normalizedLabel.isEmpty()) {
+            return
+        }
+
+        val labelKey = normalizedLabel.pomodoroLabelKey()
+        val savedLabels = getSavedPomodoroLabelEntries()
+            .filterNot { it.pomodoroLabelKey() == labelKey }
+        val labelLastUsed = getPomodoroLabelLastUsed().apply {
+            put(labelKey, usedAtMillis)
+        }
+
+        ensurePomodoroLabelColor(normalizedLabel)
+        prefs.withPrefs {
+            it.putString(
+                Constants.SAVED_POMODORO_LABELS_KEY,
+                JSONArray(listOf(normalizedLabel) + savedLabels).toString()
+            )
+            it.putString(Constants.POMODORO_LABEL_LAST_USED_KEY, labelLastUsed.toString())
+            it.putString(Constants.LAST_POMODORO_LABEL_KEY, normalizedLabel)
         }
     }
 
@@ -116,11 +157,15 @@ class PomodoroRepository(context: Context) {
         return JSONObject(colorsJson)
     }
 
+    private fun getPomodoroLabelLastUsed(): JSONObject {
+        val lastUsedJson = prefs.getString(Constants.POMODORO_LABEL_LAST_USED_KEY, null) ?: return JSONObject()
+        return JSONObject(lastUsedJson)
+    }
+
     fun clearDailyProgress() {
         prefs.withPrefs {
             it.putInt(Constants.POMODORO_COUNT_KEY, 0)
             it.remove(Constants.POMODORO_LABELS_KEY)
-            it.remove(Constants.LAST_POMODORO_LABEL_KEY)
             it.remove(Constants.PENDING_POMODORO_LABEL_KEY)
         }
     }
@@ -140,9 +185,7 @@ class PomodoroRepository(context: Context) {
             it.putLong(Constants.START_TIME_KEY, startTime)
             it.putLong(Constants.END_TIME_KEY, endTime)
             it.putString(Constants.PENDING_POMODORO_LABEL_KEY, normalizedLabel)
-            it.putString(Constants.LAST_POMODORO_LABEL_KEY, normalizedLabel)
         }
-        savePomodoroLabel(normalizedLabel)
     }
 
     fun completeSession(newPomodoroCount: Int? = null) {
@@ -178,7 +221,7 @@ class PomodoroRepository(context: Context) {
             }
         }
 
-        prefs.withCommittedPrefs { editor ->
+        val completed = prefs.withCommittedPrefs { editor ->
             editor.remove(Constants.START_TIME_KEY)
             editor.remove(Constants.END_TIME_KEY)
             editor.remove(Constants.PENDING_REQUEST_CODE_KEY)
@@ -191,9 +234,19 @@ class PomodoroRepository(context: Context) {
             }
         }
 
-        return true
+        if (completed && canAddPomodoro && pomodoroLabelsEnabled) {
+            recordPomodoroLabelUse(pendingLabel)
+        }
+
+        return completed
     }
 }
+
+private data class SavedPomodoroLabel(
+    val label: String,
+    val lastUsedAt: Long,
+    val index: Int
+)
 
 private fun String.normalizePomodoroLabel(): String = trim().take(15)
 
