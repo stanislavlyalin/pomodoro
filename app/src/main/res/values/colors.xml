@@ -8,7 +8,22 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <color name="button_red">#FF0000</color> <!-- Красный цвет для кнопки -->
-    <color name="timer_green">#4CAF50</color> <!-- Зелёный цвет для текста таймера -->
-    <color name="pale_green">#CCFFCC</color> <!-- Бледно-зелёный цвет -->
+    <color name="button_red">#FF1E22</color>
+    <color name="button_red_dark">#E70000</color>
+    <color name="button_red_light">#FF393D</color>
+    <color name="timer_green">#1E7E28</color>
+    <color name="timer_green_dark">#0E5B20</color>
+    <color name="timer_green_soft">#DFF8D9</color>
+    <color name="timer_green_muted">#6B8F70</color>
+    <color name="chart_teal">#219A78</color>
+    <color name="chart_leaf">#71B95F</color>
+    <color name="pale_green">#EFFBEF</color>
+    <color name="pale_green_edge">#DFF6DD</color>
+    <color name="surface_card">#FDFEFA</color>
+    <color name="surface_card_soft">#F6FFF2</color>
+    <color name="surface_line">#CDE8C8</color>
+    <color name="text_primary_green">#0D5522</color>
+    <color name="text_secondary_green">#5E765F</color>
+    <color name="nav_inactive">#6A7268</color>
+    <color name="status_bar_gray">#5F5F5F</color>
 </resources>

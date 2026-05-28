@@ -10,11 +10,11 @@ import android.provider.Settings
 import android.text.InputFilter
 import android.text.InputType
 import android.view.Gravity
+import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.Button
 import android.widget.GridLayout
-import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -25,16 +25,18 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.setMargins
 import java.util.Calendar
+import kotlin.math.max
 import kotlin.math.min
 
 class MainActivity : AppCompatActivity(), TimerListener {
 
     // UI Elements
+    private lateinit var logo: ImageView
     private lateinit var timerText: TextView
     private lateinit var startButton: Button
     private lateinit var tomatoGrid: GridLayout
-    private lateinit var statisticsButton: ImageButton
-    private lateinit var settingsButton: ImageButton
+    private lateinit var statisticsButton: View
+    private lateinit var settingsButton: View
 
     // Dependencies
     private lateinit var repository: PomodoroRepository
@@ -55,6 +57,7 @@ class MainActivity : AppCompatActivity(), TimerListener {
         pomodoroTimer = PomodoroTimer(this)
 
         initViews()
+        configureAdaptiveLayout()
         checkDayReset()
         initTomatoGrid()
 
@@ -66,6 +69,7 @@ class MainActivity : AppCompatActivity(), TimerListener {
     }
 
     private fun initViews() {
+        logo = findViewById(R.id.logo)
         timerText = findViewById(R.id.timer_text)
         startButton = findViewById(R.id.start_button)
         tomatoGrid = findViewById(R.id.tomato_grid)
@@ -73,6 +77,25 @@ class MainActivity : AppCompatActivity(), TimerListener {
         settingsButton = findViewById(R.id.settings_button)
 
         timerText.text = formatPomodoroDuration(repository.pomodoroDuration)
+    }
+
+    private fun configureAdaptiveLayout() {
+        val heightDp = resources.configuration.screenHeightDp
+        val logoSize = when {
+            heightDp < 640 -> 168
+            heightDp < 760 -> 210
+            else -> 250
+        }
+        logo.layoutParams = logo.layoutParams.apply {
+            width = dp(logoSize)
+            height = dp(logoSize)
+        }
+        timerText.textSize = when {
+            heightDp < 640 -> 68f
+            heightDp < 760 -> 82f
+            else -> 96f
+        }
+        startButton.textSize = if (heightDp < 640) 20f else 24f
     }
 
     private fun checkDayReset() {
@@ -84,7 +107,8 @@ class MainActivity : AppCompatActivity(), TimerListener {
     }
 
     private fun initTomatoGrid() {
-        tomatoGrid.columnCount = 6
+        val columns = getPomodoroGridColumns()
+        tomatoGrid.columnCount = columns
         tomatoGrid.removeAllViews()
         tomatoImages.clear()
         tomatoLabels.clear()
@@ -93,30 +117,35 @@ class MainActivity : AppCompatActivity(), TimerListener {
         val margin = resources.getDimensionPixelSize(R.dimen.tomato_margin)
         val total = repository.totalPomodoros
         displayedTotalPomodoros = total
+        tomatoGrid.rowCount = max(1, (total + columns - 1) / columns)
         val labels = repository.getPomodoroLabels()
 
         for (i in 0 until total) {
             val cellView = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.CENTER
+                setPadding(0, margin, 0, margin)
             }
             val imageView = ImageView(this)
-            val params = GridLayout.LayoutParams().apply {
-                width = size
+            val params = GridLayout.LayoutParams(
+                GridLayout.spec(i / columns),
+                GridLayout.spec(i % columns)
+            ).apply {
+                width = size + margin * 2
                 height = LinearLayout.LayoutParams.WRAP_CONTENT
-                setMargins(margin)
+                setGravity(Gravity.CENTER)
             }
             cellView.layoutParams = params
             imageView.layoutParams = LinearLayout.LayoutParams(size, size)
-            val imageRes = if (i < repository.pomodoroCount) R.drawable.tomato_red else R.drawable.tomato_green
+            val imageRes = if (i < repository.pomodoroCount) R.drawable.tomato_badge_red else R.drawable.tomato_badge_green
             imageView.setImageResource(imageRes)
 
             val labelView = TextView(this).apply {
-                layoutParams = LinearLayout.LayoutParams(size, LinearLayout.LayoutParams.WRAP_CONTENT)
+                layoutParams = LinearLayout.LayoutParams(size + margin * 2, LinearLayout.LayoutParams.WRAP_CONTENT)
                 gravity = Gravity.CENTER
                 includeFontPadding = false
                 maxLines = 2
-                textSize = 10f
+                textSize = 11f
                 updatePomodoroLabelText(this, labels.getOrNull(i).orEmpty(), i < repository.pomodoroCount)
             }
 
@@ -132,10 +161,14 @@ class MainActivity : AppCompatActivity(), TimerListener {
         val count = repository.pomodoroCount
         val labels = repository.getPomodoroLabels()
         tomatoImages.forEachIndexed { index, imageView ->
-            val res = if (index < count) R.drawable.tomato_red else R.drawable.tomato_green
+            val res = if (index < count) R.drawable.tomato_badge_red else R.drawable.tomato_badge_green
             imageView.setImageResource(res)
             updatePomodoroLabelText(tomatoLabels[index], labels.getOrNull(index).orEmpty(), index < count)
         }
+    }
+
+    private fun getPomodoroGridColumns(): Int {
+        return if (resources.configuration.screenWidthDp < 360) 4 else 5
     }
 
     private fun setupClickListeners() {
@@ -203,12 +236,12 @@ class MainActivity : AppCompatActivity(), TimerListener {
                 AlertDialog.Builder(this)
                     .setTitle(R.string.permission_required)
                     .setMessage(R.string.exact_alarm_permission_message)
-                    .setPositiveButton(R.string.open_settings) { dialog, which ->
+                    .setPositiveButton(R.string.open_settings) { _, _ ->
                         val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
                         intent.data = Uri.fromParts("package", packageName, null)
                         startActivity(intent)
                     }
-                    .setNegativeButton(R.string.cancel) { dialog, which ->
+                    .setNegativeButton(R.string.cancel) { dialog, _ ->
                         Toast.makeText(
                             this,
                             getString(R.string.alarm_permission_denied),
@@ -386,12 +419,15 @@ class MainActivity : AppCompatActivity(), TimerListener {
     private fun updatePomodoroLabelText(labelView: TextView, label: String, isCompleted: Boolean) {
         if (!repository.pomodoroLabelsEnabled || !isCompleted) {
             labelView.text = ""
-            labelView.setTextColor(ContextCompat.getColor(this, android.R.color.black))
+            labelView.setTextColor(ContextCompat.getColor(this, R.color.text_secondary_green))
             return
         }
 
         labelView.text = formatPomodoroLabel(label)
-        repository.getPomodoroLabelColor(label)?.let { labelView.setTextColor(it) }
+        labelView.setTextColor(
+            repository.getPomodoroLabelColor(label)
+                ?: ContextCompat.getColor(this, R.color.timer_green)
+        )
     }
 
     private fun findPomodoroLabelBreakIndex(label: String): Int? {
@@ -413,6 +449,10 @@ class MainActivity : AppCompatActivity(), TimerListener {
         val minutes = (durationMillis / 1000) / 60
         val seconds = (durationMillis / 1000) % 60
         return String.format(Constants.TIME_FORMAT, minutes, seconds)
+    }
+
+    private fun dp(value: Int): Int {
+        return (value * resources.displayMetrics.density).toInt()
     }
 
     override fun onDestroy() {

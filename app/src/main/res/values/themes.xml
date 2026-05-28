@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.Pomodoro" parent="Theme.AppCompat.Light.NoActionBar">
-        <!-- Здесь вы можете настроить вашу тему -->
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:statusBarColor">@color/status_bar_gray</item>
+        <item name="android:navigationBarColor">@color/white</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="colorAccent">@color/timer_green</item>
     </style>
 </resources>

@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <solid android:color="@color/button_red" /> <!-- Цвет фона кнопки -->
+    <gradient
+        android:angle="0"
+        android:endColor="@color/button_red_dark"
+        android:startColor="@color/button_red_light"
+        android:type="linear" />
 
-    <corners android:radius="26dp" /> <!-- Радиус закругленных углов -->
+    <corners android:radius="26dp" />
 
     <padding
         android:left="10dp"
@@ -12,5 +16,5 @@
 
     <stroke
         android:width="2dp"
-        android:color="@android:color/white" /> <!-- Опционально: граница -->
+        android:color="@android:color/white" />
 </shape>

@@ -26,15 +26,25 @@ class StatisticsBarChart @JvmOverloads constructor(
     private val bars = mutableListOf<StatisticsBar>()
     private val tomatoBitmap: Bitmap = BitmapFactory.decodeResource(resources, R.drawable.tomato_red)
     private val tomatoDst = RectF()
+    private val pillRect = RectF()
+    private val pillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
+        alpha = 245
+    }
+    private val pillStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.argb(95, 125, 183, 105)
+        style = Paint.Style.STROKE
+        strokeWidth = dp(1).toFloat()
+    }
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = android.graphics.Color.WHITE
         textAlign = Paint.Align.CENTER
-        typeface = android.graphics.Typeface.create(android.graphics.Typeface.SERIF, android.graphics.Typeface.NORMAL)
+        typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
     }
     private val labelTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        textSize = dp(24).toFloat()
-        typeface = android.graphics.Typeface.create(android.graphics.Typeface.SERIF, android.graphics.Typeface.NORMAL)
+        textSize = dp(10).toFloat()
+        typeface = android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.NORMAL)
     }
 
     fun setStatisticsBars(newBars: List<StatisticsBar>) {
@@ -61,19 +71,28 @@ class StatisticsBarChart @JvmOverloads constructor(
         val centerX = topPoint.x.toFloat()
         val topY = topPoint.y.toFloat()
 
-        val tomatoSize = dp(34).toFloat()
+        val tomatoSize = dp(24).toFloat()
         val countTextSize = dp(16).toFloat()
         val durationTextSize = dp(15).toFloat()
         val rowTop = topY + dp(12)
 
         textPaint.textSize = countTextSize
+        textPaint.color = android.graphics.Color.rgb(13, 85, 34)
         val countText = bar.count.toString()
         val countWidth = textPaint.measureText(countText)
         val combinedWidth = countWidth + dp(6) + tomatoSize
-        val countX = centerX - combinedWidth / 2f + countWidth / 2f
-        val tomatoLeft = centerX - combinedWidth / 2f + countWidth + dp(6)
+        val tomatoLeft = centerX - combinedWidth / 2f
+        val countX = tomatoLeft + tomatoSize + dp(6) + countWidth / 2f
         val countY = rowTop + tomatoSize / 2f - (textPaint.descent() + textPaint.ascent()) / 2f
 
+        pillRect.set(
+            centerX - combinedWidth / 2f - dp(10),
+            rowTop - dp(4),
+            centerX + combinedWidth / 2f + dp(10),
+            rowTop + tomatoSize + dp(4)
+        )
+        canvas.drawRoundRect(pillRect, dp(8).toFloat(), dp(8).toFloat(), pillPaint)
+        canvas.drawRoundRect(pillRect, dp(8).toFloat(), dp(8).toFloat(), pillStrokePaint)
         canvas.drawText(countText, countX, countY, textPaint)
         tomatoDst.set(tomatoLeft, rowTop, tomatoLeft + tomatoSize, rowTop + tomatoSize)
         canvas.drawBitmap(tomatoBitmap, null, tomatoDst, null)
@@ -93,7 +112,7 @@ class StatisticsBarChart @JvmOverloads constructor(
     private fun drawLabel(canvas: Canvas, bar: StatisticsBar, centerX: Float, y: Float) {
         labelTextPaint.color = bar.color
         splitLabel(bar.label).forEachIndexed { index, line ->
-            canvas.drawText(line, centerX, y + index * dp(30), labelTextPaint)
+            canvas.drawText(line, centerX, y + index * dp(14), labelTextPaint)
         }
     }
 

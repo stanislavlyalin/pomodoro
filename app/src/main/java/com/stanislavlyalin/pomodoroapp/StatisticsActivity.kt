@@ -1,9 +1,10 @@
 package com.stanislavlyalin.pomodoroapp
 
+import android.content.Intent
+import android.graphics.Typeface
 import android.os.Bundle
-import android.text.SpannableString
-import android.text.Spanned
-import android.text.style.ForegroundColorSpan
+import android.view.Gravity
+import android.view.View
 import android.view.ViewGroup
 import android.widget.HorizontalScrollView
 import android.widget.ImageButton
@@ -15,10 +16,12 @@ import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
 import com.github.mikephil.charting.data.BarEntry
+import com.github.mikephil.charting.formatter.ValueFormatter
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import kotlin.math.ceil
 import kotlin.math.max
 
 class StatisticsActivity : AppCompatActivity() {
@@ -26,9 +29,12 @@ class StatisticsActivity : AppCompatActivity() {
     private lateinit var dateText: TextView
     private lateinit var previousDayButton: ImageButton
     private lateinit var nextDayButton: ImageButton
+    private lateinit var totalText: TextView
     private lateinit var chartScroll: HorizontalScrollView
     private lateinit var chartView: StatisticsBarChart
     private lateinit var timelineContainer: LinearLayout
+    private lateinit var homeButton: View
+    private lateinit var settingsButton: View
 
     private val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale("ru"))
     private val timeFormat = SimpleDateFormat("HH:mm", Locale("ru"))
@@ -51,13 +57,18 @@ class StatisticsActivity : AppCompatActivity() {
         dateText = findViewById(R.id.statistics_date)
         previousDayButton = findViewById(R.id.previous_day_button)
         nextDayButton = findViewById(R.id.next_day_button)
+        totalText = findViewById(R.id.statistics_total)
         chartScroll = findViewById(R.id.chart_scroll)
         chartView = findViewById(R.id.statistics_chart)
         timelineContainer = findViewById(R.id.timeline_container)
+        homeButton = findViewById(R.id.home_button)
+        settingsButton = findViewById(R.id.settings_button)
     }
 
     private fun setupChart() {
         val axisColor = ContextCompat.getColor(this, R.color.timer_green)
+        val gridColor = ContextCompat.getColor(this, R.color.surface_line)
+        val textColor = ContextCompat.getColor(this, R.color.text_secondary_green)
         chartView.description.isEnabled = false
         chartView.legend.isEnabled = false
         chartView.setScaleEnabled(false)
@@ -65,16 +76,34 @@ class StatisticsActivity : AppCompatActivity() {
         chartView.setDrawGridBackground(false)
         chartView.setDrawBarShadow(false)
         chartView.setDrawValueAboveBar(false)
-        chartView.extraBottomOffset = 64f
+        chartView.setNoDataText(getString(R.string.statistics_empty))
+        chartView.setNoDataTextColor(axisColor)
+        chartView.extraBottomOffset = 70f
+        chartView.extraLeftOffset = 8f
 
-        chartView.axisLeft.isEnabled = false
+        chartView.axisLeft.apply {
+            isEnabled = true
+            axisMinimum = 0f
+            setTextColor(textColor)
+            textSize = 12f
+            setDrawAxisLine(false)
+            setDrawGridLines(true)
+            setGridColor(gridColor)
+            setGridLineWidth(1f)
+            enableGridDashedLine(8f, 8f, 0f)
+            valueFormatter = object : ValueFormatter() {
+                override fun getFormattedValue(value: Float): String {
+                    return "${value.toInt()}м"
+                }
+            }
+        }
         chartView.axisRight.isEnabled = false
         chartView.xAxis.apply {
             position = XAxis.XAxisPosition.BOTTOM
             setDrawGridLines(false)
             setDrawLabels(false)
             axisLineColor = axisColor
-            axisLineWidth = 3f
+            axisLineWidth = 2.4f
         }
     }
 
@@ -87,6 +116,14 @@ class StatisticsActivity : AppCompatActivity() {
             selectedDayStartMillis = addDays(selectedDayStartMillis, 1)
             renderStatistics()
         }
+        homeButton.setOnClickListener {
+            startActivity(Intent(this, MainActivity::class.java))
+            finish()
+        }
+        settingsButton.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+            finish()
+        }
     }
 
     private fun renderStatistics() {
@@ -95,6 +132,10 @@ class StatisticsActivity : AppCompatActivity() {
 
         dateText.text = dateFormat.format(Date(selectedDayStartMillis))
         updateNavigationButtons()
+        totalText.text = getString(
+            R.string.statistics_total,
+            formatDuration(entries.sumOf { it.durationMillis })
+        )
         renderChart(entries)
         renderTimeline(entries)
     }
@@ -128,7 +169,11 @@ class StatisticsActivity : AppCompatActivity() {
         chartView.xAxis.axisMinimum = -0.5f
         chartView.xAxis.axisMaximum = bars.size - 0.5f
         chartView.axisLeft.axisMinimum = 0f
-        chartView.axisLeft.axisMaximum = barEntries.maxOf { it.y }.coerceAtLeast(1f) * 1.08f
+        val maxMinutes = barEntries.maxOf { it.y }.coerceAtLeast(15f)
+        val axisMax = (ceil(maxMinutes / 15f) * 15f).coerceAtLeast(15f)
+        chartView.axisLeft.axisMaximum = axisMax
+        chartView.axisLeft.granularity = 15f
+        chartView.axisLeft.setLabelCount((axisMax / 15f).toInt() + 1, true)
         chartView.invalidate()
         chartScroll.post { chartScroll.scrollTo(0, 0) }
     }
@@ -137,15 +182,16 @@ class StatisticsActivity : AppCompatActivity() {
         timelineContainer.removeAllViews()
 
         if (entries.isEmpty()) {
-            timelineContainer.addView(createTimelineText(getString(R.string.statistics_empty), ContextCompat.getColor(this, R.color.timer_green)))
+            timelineContainer.addView(createEmptyTimelineText())
             return
         }
 
-        entries.sortedBy { it.completedAtMillis }.forEach { entry ->
-            val startMillis = entry.completedAtMillis - entry.durationMillis
-            val timeRange = "${timeFormat.format(Date(startMillis))} - ${timeFormat.format(Date(entry.completedAtMillis))}"
-            val label = getTimelineLabel(entry)
-            timelineContainer.addView(createTimelineText(createTimelineEntryText(timeRange, label, getEntryColor(entry))))
+        val sortedEntries = entries.sortedBy { it.completedAtMillis }
+        sortedEntries.forEachIndexed { index, entry ->
+            timelineContainer.addView(createTimelineRow(index + 1, entry))
+            if (index != sortedEntries.lastIndex) {
+                timelineContainer.addView(createDivider())
+            }
         }
     }
 
@@ -182,39 +228,72 @@ class StatisticsActivity : AppCompatActivity() {
             )
     }
 
-    private fun createTimelineText(text: CharSequence): TextView {
+    private fun createEmptyTimelineText(): TextView {
         return TextView(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
-            setText(text)
-            textSize = 20f
+            text = getString(R.string.statistics_empty)
+            setTextColor(ContextCompat.getColor(this@StatisticsActivity, R.color.timer_green))
+            textSize = 14f
             includeFontPadding = true
+            gravity = Gravity.CENTER
+            setPadding(0, dp(18), 0, dp(10))
         }
     }
 
-    private fun createTimelineText(text: String, color: Int): TextView {
-        return createTimelineText(SpannableString(text).apply {
-            setSpan(ForegroundColorSpan(color), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-        })
+    private fun createTimelineRow(position: Int, entry: PomodoroHistoryEntry): LinearLayout {
+        val startMillis = entry.completedAtMillis - entry.durationMillis
+        val timeRange = "${timeFormat.format(Date(startMillis))} - ${timeFormat.format(Date(entry.completedAtMillis))}"
+        val label = getTimelineLabel(entry)
+
+        return LinearLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            gravity = Gravity.CENTER_VERTICAL
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, dp(8), 0, dp(8))
+
+            addView(TextView(this@StatisticsActivity).apply {
+                layoutParams = LinearLayout.LayoutParams(dp(34), dp(34))
+                background = ContextCompat.getDrawable(this@StatisticsActivity, R.drawable.bg_timeline_index)
+                gravity = Gravity.CENTER
+                text = position.toString()
+                setTextColor(ContextCompat.getColor(this@StatisticsActivity, R.color.text_primary_green))
+                textSize = 13f
+            })
+
+            addView(TextView(this@StatisticsActivity).apply {
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.05f).apply {
+                    marginStart = dp(16)
+                }
+                text = timeRange
+                setTextColor(ContextCompat.getColor(this@StatisticsActivity, R.color.text_secondary_green))
+                textSize = 13f
+            })
+
+            addView(TextView(this@StatisticsActivity).apply {
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    marginStart = dp(12)
+                }
+                text = label
+                setTextColor(getEntryColor(entry))
+                textSize = 13f
+                typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            })
+        }
     }
 
-    private fun createTimelineEntryText(timeRange: String, label: String, labelColor: Int): SpannableString {
-        val text = "$timeRange $label"
-        return SpannableString(text).apply {
-            setSpan(
-                ForegroundColorSpan(ContextCompat.getColor(this@StatisticsActivity, R.color.timer_green)),
-                0,
-                timeRange.length,
-                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+    private fun createDivider(): View {
+        return View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                dp(1)
             )
-            setSpan(
-                ForegroundColorSpan(labelColor),
-                timeRange.length + 1,
-                text.length,
-                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
+            background = ContextCompat.getDrawable(this@StatisticsActivity, R.drawable.bg_soft_divider)
         }
     }
 
@@ -264,6 +343,17 @@ class StatisticsActivity : AppCompatActivity() {
             timeInMillis = timeMillis
             add(Calendar.DAY_OF_YEAR, days)
         }.timeInMillis
+    }
+
+    private fun formatDuration(durationMillis: Long): String {
+        val totalMinutes = durationMillis / 60000L
+        val hours = totalMinutes / 60L
+        val minutes = totalMinutes % 60L
+        return if (hours > 0) {
+            "${hours}ч ${minutes}м"
+        } else {
+            "${minutes}м"
+        }
     }
 
     private fun dp(value: Int): Int {

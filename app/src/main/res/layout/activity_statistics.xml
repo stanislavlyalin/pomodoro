@@ -3,91 +3,268 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/pale_green"
-    android:padding="20dp">
+    android:background="@drawable/bg_app_surface">
 
-    <ImageButton
-        android:id="@+id/previous_day_button"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/statistics_previous_day"
-        android:padding="10dp"
-        android:src="@drawable/ic_chevron_left"
-        android:tint="@color/timer_green"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
-        android:id="@+id/statistics_date"
+    <ScrollView
+        android:id="@+id/statistics_scroll"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:textColor="@color/timer_green"
-        android:textSize="20sp"
-        app:layout_constraintBottom_toBottomOf="@id/previous_day_button"
-        app:layout_constraintEnd_toStartOf="@id/next_day_button"
-        app:layout_constraintStart_toEndOf="@id/previous_day_button"
-        app:layout_constraintTop_toTopOf="@id/previous_day_button" />
-
-    <ImageButton
-        android:id="@+id/next_day_button"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/statistics_next_day"
-        android:padding="10dp"
-        android:src="@drawable/ic_chevron_right"
-        android:tint="@color/timer_green"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <HorizontalScrollView
-        android:id="@+id/chart_scroll"
-        android:layout_width="0dp"
-        android:layout_height="330dp"
-        android:layout_marginTop="24dp"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
         android:fillViewport="true"
         android:overScrollMode="never"
         android:scrollbars="none"
+        app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/statistics_date">
-
-        <com.stanislavlyalin.pomodoroapp.StatisticsBarChart
-            android:id="@+id/statistics_chart"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-    </HorizontalScrollView>
-
-    <TextView
-        android:id="@+id/history_title"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="18dp"
-        android:text="@string/statistics_history"
-        android:textColor="@color/button_red"
-        android:textSize="26sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/chart_scroll" />
-
-    <ScrollView
-        android:id="@+id/timeline_scroll"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginTop="6dp"
-        android:fillViewport="true"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/history_title">
+        app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
-            android:id="@+id/timeline_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical" />
+            android:orientation="vertical"
+            android:paddingStart="@dimen/screen_horizontal_padding"
+            android:paddingTop="13dp"
+            android:paddingEnd="@dimen/screen_horizontal_padding"
+            android:paddingBottom="20dp">
+
+            <LinearLayout
+                android:id="@+id/date_navigation"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageButton
+                    android:id="@+id/previous_day_button"
+                    android:layout_width="54dp"
+                    android:layout_height="54dp"
+                    android:background="@drawable/bg_circle_button"
+                    android:contentDescription="@string/statistics_previous_day"
+                    android:padding="13dp"
+                    android:src="@drawable/ic_chevron_left"
+                    android:tint="@color/timer_green_dark" />
+
+                <TextView
+                    android:id="@+id/statistics_date"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="sans-serif-medium"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:textColor="@color/text_primary_green"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <ImageButton
+                    android:id="@+id/next_day_button"
+                    android:layout_width="54dp"
+                    android:layout_height="54dp"
+                    android:background="@drawable/bg_circle_button"
+                    android:contentDescription="@string/statistics_next_day"
+                    android:padding="13dp"
+                    android:src="@drawable/ic_chevron_right"
+                    android:tint="@color/timer_green_dark" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/chart_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:paddingStart="20dp"
+                android:paddingTop="10dp"
+                android:paddingEnd="20dp"
+                android:paddingBottom="18dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="@dimen/icon_chip_size"
+                        android:layout_height="@dimen/icon_chip_size"
+                        android:background="@drawable/bg_icon_chip"
+                        android:contentDescription="@string/statistics"
+                        android:padding="11dp"
+                        android:src="@drawable/ic_statistics"
+                        android:tint="@color/timer_green" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp"
+                        android:layout_weight="1"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="@string/statistics_day_title"
+                        android:textColor="@color/text_primary_green"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/statistics_total"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_total_badge"
+                        android:textColor="@color/text_primary_green"
+                        android:textSize="16sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:text="@string/time_label"
+                    android:textColor="@color/text_secondary_green"
+                    android:textSize="12sp" />
+
+                <HorizontalScrollView
+                    android:id="@+id/chart_scroll"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/chart_height"
+                    android:layout_marginTop="4dp"
+                    android:fillViewport="true"
+                    android:overScrollMode="never"
+                    android:scrollbars="none">
+
+                    <com.stanislavlyalin.pomodoroapp.StatisticsBarChart
+                        android:id="@+id/statistics_chart"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent" />
+                </HorizontalScrollView>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/history_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:paddingStart="20dp"
+                android:paddingTop="10dp"
+                android:paddingEnd="20dp"
+                android:paddingBottom="18dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="@dimen/icon_chip_size"
+                        android:layout_height="@dimen/icon_chip_size"
+                        android:background="@drawable/bg_icon_chip_red"
+                        android:contentDescription="@string/statistics_history"
+                        android:padding="10dp"
+                        android:src="@drawable/ic_history" />
+
+                    <TextView
+                        android:id="@+id/history_title"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp"
+                        android:layout_weight="1"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="@string/statistics_history"
+                        android:textColor="@color/text_primary_green"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/timeline_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="7dp"
+                    android:orientation="vertical" />
+            </LinearLayout>
+        </LinearLayout>
     </ScrollView>
 
+    <LinearLayout
+        android:id="@+id/bottom_navigation"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/bottom_nav_height"
+        android:layout_marginStart="@dimen/bottom_nav_margin"
+        android:layout_marginEnd="@dimen/bottom_nav_margin"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/bg_bottom_nav"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <LinearLayout
+            android:id="@+id/home_button"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/bottom_nav_item_height"
+            android:layout_weight="1"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp">
+
+            <ImageView
+                android:layout_width="@dimen/nav_icon_size"
+                android:layout_height="@dimen/nav_icon_size"
+                android:contentDescription="@string/home"
+                android:src="@drawable/tomato_red" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/statistics_button"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/bottom_nav_item_height"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_nav_selected"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp">
+
+            <ImageView
+                android:layout_width="@dimen/nav_icon_size"
+                android:layout_height="@dimen/nav_icon_size"
+                android:contentDescription="@string/statistics"
+                android:padding="3dp"
+                android:src="@drawable/ic_statistics"
+                android:tint="@color/timer_green" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/settings_button"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/bottom_nav_item_height"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp">
+
+            <ImageView
+                android:layout_width="@dimen/nav_icon_size"
+                android:layout_height="@dimen/nav_icon_size"
+                android:contentDescription="@string/settings"
+                android:padding="2dp"
+                android:src="@drawable/ic_settings"
+                android:tint="@color/nav_inactive" />
+        </LinearLayout>
+    </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
