@@ -68,7 +68,7 @@ class SettingsActivity : AppCompatActivity() {
                     )
                     apply()
                 }
-                Toast.makeText(this, getString(R.string.restartToApplySettings), Toast.LENGTH_SHORT)
+                Toast.makeText(this, getString(R.string.settings_saved), Toast.LENGTH_SHORT)
                     .show()
             }
         }

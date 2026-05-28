@@ -43,6 +43,7 @@ class MainActivity : AppCompatActivity(), TimerListener {
     private val tomatoImages = mutableListOf<ImageView>()
     private val tomatoLabels = mutableListOf<TextView>()
     private val NOTIFICATION_PERMISSION_REQUEST_CODE = 100
+    private var displayedTotalPomodoros = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -89,6 +90,7 @@ class MainActivity : AppCompatActivity(), TimerListener {
         val size = resources.getDimensionPixelSize(R.dimen.tomato_size)
         val margin = resources.getDimensionPixelSize(R.dimen.tomato_margin)
         val total = repository.totalPomodoros
+        displayedTotalPomodoros = total
         val labels = repository.getPomodoroLabels()
 
         for (i in 0 until total) {
@@ -259,9 +261,16 @@ class MainActivity : AppCompatActivity(), TimerListener {
 
     override fun onStart() {
         super.onStart()
+        refreshSettings()
         restoreTimerState()
         if (::repository.isInitialized && tomatoLabels.isNotEmpty()) {
             refreshTomatoes()
+        }
+    }
+
+    private fun refreshSettings() {
+        if (displayedTotalPomodoros != repository.totalPomodoros) {
+            initTomatoGrid()
         }
     }
 
