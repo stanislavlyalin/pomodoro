@@ -30,6 +30,12 @@
             android:label="@string/settings"
             android:theme="@style/Theme.Pomodoro" />
 
+        <activity
+            android:name=".StatisticsActivity"
+            android:label="@string/statistics"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.Pomodoro" />
+
         <service
             android:name=".PomodoroTimerService"
             android:exported="false"

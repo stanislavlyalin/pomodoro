@@ -8,6 +8,12 @@
     <string name="Yes">Да</string>
     <string name="No">Нет</string>
     <string name="settings">Настройки</string>
+    <string name="statistics">Статистика</string>
+    <string name="statistics_previous_day">Предыдущий день</string>
+    <string name="statistics_next_day">Следующий день</string>
+    <string name="statistics_empty">Нет помидоров за этот день</string>
+    <string name="statistics_unlabeled">Помидоры</string>
+    <string name="statistics_without_label">Без метки</string>
     <string name="number_of_pomodoros">Помидоров за день</string>
     <string name="pomodoro_duration_minutes">Длительность</string>
     <string name="save">Сохранить настройки</string>

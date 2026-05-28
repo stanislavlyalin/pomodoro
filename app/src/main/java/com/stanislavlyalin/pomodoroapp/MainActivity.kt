@@ -33,6 +33,7 @@ class MainActivity : AppCompatActivity(), TimerListener {
     private lateinit var timerText: TextView
     private lateinit var startButton: Button
     private lateinit var tomatoGrid: GridLayout
+    private lateinit var statisticsButton: ImageButton
     private lateinit var settingsButton: ImageButton
 
     // Dependencies
@@ -68,6 +69,7 @@ class MainActivity : AppCompatActivity(), TimerListener {
         timerText = findViewById(R.id.timer_text)
         startButton = findViewById(R.id.start_button)
         tomatoGrid = findViewById(R.id.tomato_grid)
+        statisticsButton = findViewById(R.id.statistics_button)
         settingsButton = findViewById(R.id.settings_button)
 
         timerText.text = formatPomodoroDuration(repository.pomodoroDuration)
@@ -148,6 +150,9 @@ class MainActivity : AppCompatActivity(), TimerListener {
                 }
                 TimerState.RUNNING -> showEarlyFinishDialog()
             }
+        }
+        statisticsButton.setOnClickListener {
+            startActivity(Intent(this, StatisticsActivity::class.java))
         }
         settingsButton.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))

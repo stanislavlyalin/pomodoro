@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/pale_green"
+    android:padding="20dp">
+
+    <ImageButton
+        android:id="@+id/previous_day_button"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/statistics_previous_day"
+        android:padding="10dp"
+        android:src="@drawable/ic_chevron_left"
+        android:tint="@color/timer_green"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/statistics_date"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:textColor="@color/timer_green"
+        android:textSize="30sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@id/previous_day_button"
+        app:layout_constraintEnd_toStartOf="@id/next_day_button"
+        app:layout_constraintStart_toEndOf="@id/previous_day_button"
+        app:layout_constraintTop_toTopOf="@id/previous_day_button" />
+
+    <ImageButton
+        android:id="@+id/next_day_button"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/statistics_next_day"
+        android:padding="10dp"
+        android:src="@drawable/ic_chevron_right"
+        android:tint="@color/timer_green"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <HorizontalScrollView
+        android:id="@+id/chart_scroll"
+        android:layout_width="0dp"
+        android:layout_height="330dp"
+        android:layout_marginTop="24dp"
+        android:fillViewport="true"
+        android:overScrollMode="never"
+        android:scrollbars="none"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/statistics_date">
+
+        <com.stanislavlyalin.pomodoroapp.StatisticsChartView
+            android:id="@+id/statistics_chart"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </HorizontalScrollView>
+
+    <ScrollView
+        android:id="@+id/timeline_scroll"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="26dp"
+        android:fillViewport="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/chart_scroll">
+
+        <LinearLayout
+            android:id="@+id/timeline_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+    </ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

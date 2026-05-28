@@ -3,6 +3,7 @@ package com.stanislavlyalin.pomodoroapp
 import android.content.Context
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.Calendar
 import java.util.Locale
 
 class PomodoroRepository(context: Context) {
@@ -53,6 +54,21 @@ class PomodoroRepository(context: Context) {
         val labelsJson = prefs.getString(Constants.POMODORO_LABELS_KEY, null) ?: return emptyList()
         val labels = JSONArray(labelsJson)
         return List(labels.length()) { index -> labels.optString(index, "") }
+    }
+
+    fun getPomodoroHistoryEntries(
+        nowMillis: Long = System.currentTimeMillis()
+    ): List<PomodoroHistoryEntry> {
+        val entries = getRawPomodoroHistoryEntries()
+        val retainedEntries = entries.filter { it.completedAtMillis >= getHistoryCutoffMillis(nowMillis) }
+
+        if (retainedEntries.size != entries.size) {
+            prefs.withPrefs {
+                it.putString(Constants.POMODORO_HISTORY_KEY, retainedEntries.toJsonArray().toString())
+            }
+        }
+
+        return retainedEntries.sortedBy { it.completedAtMillis }
     }
 
     fun getSavedPomodoroLabels(): List<String> {
@@ -204,11 +220,13 @@ class PomodoroRepository(context: Context) {
             return false
         }
 
+        val completedAtMillis = System.currentTimeMillis()
         val currentCount = pomodoroCount
         val canAddPomodoro = currentCount < totalPomodoros
         val nextCount = if (canAddPomodoro) currentCount + 1 else currentCount
         val pendingLabel = prefs.getString(Constants.PENDING_POMODORO_LABEL_KEY, "") ?: ""
         val labels = getPomodoroLabels().toMutableList()
+        val historyEntries = getPomodoroHistoryEntries(completedAtMillis).toMutableList()
 
         if (canAddPomodoro && pomodoroLabelsEnabled) {
             while (labels.size < currentCount) {
@@ -221,6 +239,16 @@ class PomodoroRepository(context: Context) {
             }
         }
 
+        if (canAddPomodoro) {
+            historyEntries.add(
+                PomodoroHistoryEntry(
+                    completedAtMillis = completedAtMillis,
+                    durationMillis = pomodoroDuration,
+                    label = if (pomodoroLabelsEnabled) pendingLabel else ""
+                )
+            )
+        }
+
         val completed = prefs.withCommittedPrefs { editor ->
             editor.remove(Constants.START_TIME_KEY)
             editor.remove(Constants.END_TIME_KEY)
@@ -228,6 +256,7 @@ class PomodoroRepository(context: Context) {
             editor.remove(Constants.PENDING_POMODORO_LABEL_KEY)
             if (canAddPomodoro) {
                 editor.putInt(Constants.POMODORO_COUNT_KEY, nextCount)
+                editor.putString(Constants.POMODORO_HISTORY_KEY, historyEntries.toJsonArray().toString())
             }
             if (canAddPomodoro && pomodoroLabelsEnabled) {
                 editor.putString(Constants.POMODORO_LABELS_KEY, JSONArray(labels).toString())
@@ -240,7 +269,58 @@ class PomodoroRepository(context: Context) {
 
         return completed
     }
+
+    private fun getRawPomodoroHistoryEntries(): List<PomodoroHistoryEntry> {
+        val historyJson = prefs.getString(Constants.POMODORO_HISTORY_KEY, null) ?: return emptyList()
+        val entries = JSONArray(historyJson)
+        return List(entries.length()) { index ->
+            val entry = entries.optJSONObject(index) ?: JSONObject()
+            PomodoroHistoryEntry(
+                completedAtMillis = entry.optLong(HISTORY_COMPLETED_AT_KEY, 0L),
+                durationMillis = entry.optLong(HISTORY_DURATION_KEY, pomodoroDuration),
+                label = entry.optString(HISTORY_LABEL_KEY, "")
+            )
+        }
+            .filter { it.completedAtMillis > 0L && it.durationMillis > 0L }
+    }
+
+    private fun List<PomodoroHistoryEntry>.toJsonArray(): JSONArray {
+        val entries = JSONArray()
+        forEach { entry ->
+            entries.put(
+                JSONObject()
+                    .put(HISTORY_COMPLETED_AT_KEY, entry.completedAtMillis)
+                    .put(HISTORY_DURATION_KEY, entry.durationMillis)
+                    .put(HISTORY_LABEL_KEY, entry.label)
+            )
+        }
+        return entries
+    }
+
+    private fun getHistoryCutoffMillis(nowMillis: Long): Long {
+        return Calendar.getInstance().apply {
+            timeInMillis = nowMillis
+            add(Calendar.DAY_OF_YEAR, -HISTORY_RETENTION_DAYS + 1)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+    }
+
+    companion object {
+        private const val HISTORY_RETENTION_DAYS = 31
+        private const val HISTORY_COMPLETED_AT_KEY = "completedAtMillis"
+        private const val HISTORY_DURATION_KEY = "durationMillis"
+        private const val HISTORY_LABEL_KEY = "label"
+    }
 }
+
+data class PomodoroHistoryEntry(
+    val completedAtMillis: Long,
+    val durationMillis: Long,
+    val label: String
+)
 
 private data class SavedPomodoroLabel(
     val label: String,
