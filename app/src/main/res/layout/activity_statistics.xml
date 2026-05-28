@@ -24,8 +24,7 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:textColor="@color/timer_green"
-        android:textSize="30sp"
-        android:textStyle="bold"
+        android:textSize="20sp"
         app:layout_constraintBottom_toBottomOf="@id/previous_day_button"
         app:layout_constraintEnd_toStartOf="@id/next_day_button"
         app:layout_constraintStart_toEndOf="@id/previous_day_button"
@@ -61,16 +60,28 @@
             android:layout_height="match_parent" />
     </HorizontalScrollView>
 
+    <TextView
+        android:id="@+id/history_title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:text="@string/statistics_history"
+        android:textColor="@color/button_red"
+        android:textSize="30sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/chart_scroll" />
+
     <ScrollView
         android:id="@+id/timeline_scroll"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginTop="26dp"
+        android:layout_marginTop="6dp"
         android:fillViewport="true"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/chart_scroll">
+        app:layout_constraintTop_toBottomOf="@id/history_title">
 
         <LinearLayout
             android:id="@+id/timeline_container"

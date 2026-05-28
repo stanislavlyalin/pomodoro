@@ -143,7 +143,7 @@ class StatisticsActivity : AppCompatActivity() {
 
     private fun getTimelineLabel(entry: PomodoroHistoryEntry): String {
         if (!repository.pomodoroLabelsEnabled) {
-            return getString(R.string.statistics_unlabeled).lowercase(Locale("ru"))
+            return getString(R.string.statistics_unlabeled_entry)
         }
 
         return entry.label.trim().ifEmpty { getString(R.string.statistics_without_label) }

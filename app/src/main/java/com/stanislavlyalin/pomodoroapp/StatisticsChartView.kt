@@ -34,7 +34,7 @@ class StatisticsChartView @JvmOverloads constructor(
     private val whiteTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = ContextCompat.getColor(context, android.R.color.white)
         textAlign = Paint.Align.CENTER
-        typeface = android.graphics.Typeface.create(android.graphics.Typeface.SERIF, android.graphics.Typeface.BOLD)
+        typeface = android.graphics.Typeface.create(android.graphics.Typeface.SERIF, android.graphics.Typeface.NORMAL)
     }
     private val labelTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
@@ -81,8 +81,8 @@ class StatisticsChartView @JvmOverloads constructor(
     }
 
     private fun drawBarText(canvas: Canvas, bar: StatisticsBar, centerX: Float, top: Float, barWidth: Float) {
-        val tomatoSize = minOf(dp(52).toFloat(), barWidth * 0.58f)
-        whiteTextPaint.textSize = dp(24).toFloat()
+        val tomatoSize = minOf(dp(35).toFloat(), barWidth * 0.44f)
+        whiteTextPaint.textSize = dp(16).toFloat()
 
         val countText = bar.count.toString()
         val countWidth = whiteTextPaint.measureText(countText)
@@ -96,8 +96,8 @@ class StatisticsChartView @JvmOverloads constructor(
         tomatoDst.set(tomatoLeft, rowTop, tomatoLeft + tomatoSize, rowTop + tomatoSize)
         canvas.drawBitmap(tomatoBitmap, null, tomatoDst, null)
 
-        whiteTextPaint.textSize = dp(23).toFloat()
-        canvas.drawText(formatDuration(bar.totalDurationMillis), centerX, rowTop + tomatoSize + dp(36), whiteTextPaint)
+        whiteTextPaint.textSize = dp(15).toFloat()
+        canvas.drawText(formatDuration(bar.totalDurationMillis), centerX, rowTop + tomatoSize + dp(28), whiteTextPaint)
     }
 
     private fun drawLabel(canvas: Canvas, bar: StatisticsBar, centerX: Float, y: Float) {
